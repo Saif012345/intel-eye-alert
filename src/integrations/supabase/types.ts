@@ -14,7 +14,51 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      threats: {
+        Row: {
+          ai_summary: string | null
+          country: string | null
+          created_at: string
+          description: string | null
+          id: string
+          indicator: string | null
+          risk_insight: string | null
+          severity: string
+          source: string
+          threat_type: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          ai_summary?: string | null
+          country?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          indicator?: string | null
+          risk_insight?: string | null
+          severity: string
+          source: string
+          threat_type: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          ai_summary?: string | null
+          country?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          indicator?: string | null
+          risk_insight?: string | null
+          severity?: string
+          source?: string
+          threat_type?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
