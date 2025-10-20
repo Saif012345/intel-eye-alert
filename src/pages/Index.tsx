@@ -1,12 +1,25 @@
+import { useState } from "react";
 import Header from "@/components/Header";
 import ThreatStats from "@/components/ThreatStats";
 import ThreatMap from "@/components/ThreatMap";
 import ThreatChart from "@/components/ThreatChart";
 import RecentThreats from "@/components/RecentThreats";
 import CVEFeed from "@/components/CVEFeed";
-import SearchBar from "@/components/SearchBar";
+import SearchBar, { SearchFilters } from "@/components/SearchBar";
 
 const Index = () => {
+  const [filters, setFilters] = useState<SearchFilters>({
+    search: "",
+    severity: [],
+    threatType: [],
+    startDate: "",
+    endDate: ""
+  });
+
+  const handleSearch = (newFilters: SearchFilters) => {
+    setFilters(newFilters);
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <Header />
@@ -17,19 +30,19 @@ const Index = () => {
           <ThreatStats />
           
           {/* Search */}
-          <SearchBar />
+          <SearchBar onSearch={handleSearch} />
           
           {/* World Map */}
           <ThreatMap />
           
           {/* Charts and Feeds Grid */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <ThreatChart />
-            <RecentThreats />
+            <ThreatChart filters={filters} />
+            <RecentThreats filters={filters} />
           </div>
           
           {/* CVE Feed */}
-          <CVEFeed />
+          <CVEFeed filters={filters} />
         </div>
       </main>
     </div>
