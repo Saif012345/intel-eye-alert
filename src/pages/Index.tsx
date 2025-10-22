@@ -6,6 +6,8 @@ import ThreatChart from "@/components/ThreatChart";
 import RecentThreats from "@/components/RecentThreats";
 import CVEFeed from "@/components/CVEFeed";
 import SearchBar, { SearchFilters } from "@/components/SearchBar";
+import ThreatTrend from "@/components/ThreatTrend";
+import AIInsights from "@/components/AIInsights";
 
 const Index = () => {
   const [filters, setFilters] = useState<SearchFilters>({
@@ -34,6 +36,12 @@ const Index = () => {
           
           {/* World Map */}
           <ThreatMap />
+          
+          {/* AI Insights and Trend */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <AIInsights />
+            <ThreatTrend />
+          </div>
           
           {/* Charts and Feeds Grid */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

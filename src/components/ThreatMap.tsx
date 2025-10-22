@@ -1,6 +1,77 @@
 import { Card } from "@/components/ui/card";
+import { useEffect, useState } from "react";
+import { ComposableMap, Geographies, Geography, Marker, Line } from "react-simple-maps";
+import { supabase } from "@/integrations/supabase/client";
+
+const geoUrl = "https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json";
+
+interface ThreatLocation {
+  id: string;
+  coordinates: [number, number];
+  severity: string;
+  country: string;
+  title: string;
+}
 
 const ThreatMap = () => {
+  const [threats, setThreats] = useState<ThreatLocation[]>([]);
+  const [connections, setConnections] = useState<Array<{ from: [number, number]; to: [number, number]; severity: string }>>([]);
+
+  useEffect(() => {
+    fetchThreats();
+    const interval = setInterval(fetchThreats, 10000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const fetchThreats = async () => {
+    const { data } = await supabase
+      .from('threats')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(15);
+
+    if (data) {
+      const locations: ThreatLocation[] = data.map((threat, idx) => ({
+        id: threat.id,
+        coordinates: getRandomCoordinates(),
+        severity: threat.severity,
+        country: threat.country || 'Unknown',
+        title: threat.title
+      }));
+      setThreats(locations);
+
+      // Generate random connections
+      const newConnections = [];
+      for (let i = 0; i < Math.min(5, locations.length - 1); i++) {
+        newConnections.push({
+          from: locations[i].coordinates,
+          to: locations[i + 1].coordinates,
+          severity: locations[i].severity
+        });
+      }
+      setConnections(newConnections);
+    }
+  };
+
+  const getRandomCoordinates = (): [number, number] => {
+    const coords: [number, number][] = [
+      [-74, 40], [0, 51], [139, 35], [-122, 37], [2, 48],
+      [37, 55], [-43, -22], [151, -33], [13, 52], [121, 31],
+      [72, 19], [-99, 19], [103, 1], [77, 28], [-3, 40]
+    ];
+    return coords[Math.floor(Math.random() * coords.length)];
+  };
+
+  const getSeverityColor = (severity: string) => {
+    const colors: Record<string, string> = {
+      critical: "#dc2626",
+      high: "#ea580c",
+      medium: "#38bdf8",
+      low: "#10b981"
+    };
+    return colors[severity] || "#38bdf8";
+  };
+
   return (
     <Card className="p-6 bg-card border-border">
       <div className="mb-4">
@@ -8,31 +79,68 @@ const ThreatMap = () => {
         <p className="text-sm text-muted-foreground">Real-time attack origins and targets</p>
       </div>
       
-      <div className="relative w-full h-[400px] bg-secondary rounded-lg border border-border overflow-hidden">
-        {/* Simplified world map representation */}
-        <div className="absolute inset-0 flex items-center justify-center">
-          <svg
-            viewBox="0 0 800 400"
-            className="w-full h-full opacity-20"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <path
-              d="M100,200 Q150,150 200,200 T300,200 M350,180 L400,180 L420,200 L400,220 L350,220 Z M500,150 Q550,120 600,150 L620,180 L600,210 L550,210 Z M150,250 L200,250 L220,280 L200,300 L150,300 Z M450,260 Q500,240 550,260 L570,290 L550,310 L500,310 Z"
-              fill="currentColor"
-              className="text-primary"
+      <div className="relative w-full h-[500px] bg-secondary rounded-lg border border-border overflow-hidden">
+        <ComposableMap
+          projectionConfig={{
+            scale: 147,
+          }}
+          className="w-full h-full"
+        >
+          <Geographies geography={geoUrl}>
+            {({ geographies }) =>
+              geographies.map((geo) => (
+                <Geography
+                  key={geo.rsmKey}
+                  geography={geo}
+                  fill="#1e293b"
+                  stroke="#334155"
+                  strokeWidth={0.5}
+                  style={{
+                    default: { outline: "none" },
+                    hover: { outline: "none", fill: "#334155" },
+                    pressed: { outline: "none" },
+                  }}
+                />
+              ))
+            }
+          </Geographies>
+
+          {/* Animated connection lines */}
+          {connections.map((conn, idx) => (
+            <Line
+              key={`line-${idx}`}
+              from={conn.from}
+              to={conn.to}
+              stroke={getSeverityColor(conn.severity)}
+              strokeWidth={1}
+              strokeLinecap="round"
+              strokeOpacity={0.4}
+              className="animate-pulse"
             />
-          </svg>
-        </div>
-        
-        {/* Attack indicators */}
-        <div className="absolute top-1/4 left-1/4 w-3 h-3 bg-destructive rounded-full animate-ping" />
-        <div className="absolute top-1/3 left-1/2 w-3 h-3 bg-warning rounded-full animate-ping" style={{ animationDelay: '0.5s' }} />
-        <div className="absolute top-2/3 left-1/3 w-3 h-3 bg-destructive rounded-full animate-ping" style={{ animationDelay: '1s' }} />
-        <div className="absolute top-1/2 right-1/3 w-3 h-3 bg-warning rounded-full animate-ping" style={{ animationDelay: '1.5s' }} />
-        <div className="absolute bottom-1/4 right-1/4 w-3 h-3 bg-destructive rounded-full animate-ping" style={{ animationDelay: '2s' }} />
+          ))}
+
+          {/* Threat markers */}
+          {threats.map((threat) => (
+            <Marker key={threat.id} coordinates={threat.coordinates}>
+              <circle
+                r={4}
+                fill={getSeverityColor(threat.severity)}
+                className="animate-ping"
+                style={{
+                  filter: `drop-shadow(0 0 8px ${getSeverityColor(threat.severity)})`
+                }}
+              />
+              <circle
+                r={4}
+                fill={getSeverityColor(threat.severity)}
+                opacity={0.8}
+              />
+            </Marker>
+          ))}
+        </ComposableMap>
         
         {/* Legend */}
-        <div className="absolute bottom-4 left-4 flex gap-4 text-xs">
+        <div className="absolute bottom-4 left-4 flex gap-4 text-xs bg-background/80 backdrop-blur-sm p-3 rounded-lg border border-border">
           <div className="flex items-center gap-2">
             <div className="w-3 h-3 bg-destructive rounded-full" />
             <span>Critical</span>
@@ -44,6 +152,10 @@ const ThreatMap = () => {
           <div className="flex items-center gap-2">
             <div className="w-3 h-3 bg-primary rounded-full" />
             <span>Medium</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 bg-success rounded-full" />
+            <span>Low</span>
           </div>
         </div>
       </div>

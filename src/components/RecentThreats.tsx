@@ -53,6 +53,8 @@ const RecentThreats = ({ filters }: RecentThreatsProps) => {
 
   useEffect(() => {
     fetchThreats();
+    const interval = setInterval(fetchThreats, 5000);
+    return () => clearInterval(interval);
   }, [filters]);
 
   const handleAnalyze = async (threat: Threat) => {
@@ -108,9 +110,15 @@ const RecentThreats = ({ filters }: RecentThreatsProps) => {
 
   return (
     <Card className="p-6 bg-card border-border">
-      <div className="mb-4">
-        <h2 className="text-xl font-bold mb-1">Live Threat Feed</h2>
-        <p className="text-sm text-muted-foreground">Real-time security incidents</p>
+      <div className="mb-4 flex items-center justify-between">
+        <div>
+          <h2 className="text-xl font-bold mb-1">Live Threat Feed</h2>
+          <p className="text-sm text-muted-foreground">Real-time security incidents</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="w-2 h-2 bg-destructive rounded-full animate-ping" />
+          <span className="text-xs text-muted-foreground">Live</span>
+        </div>
       </div>
       
       <div className="space-y-3">
