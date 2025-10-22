@@ -8,6 +8,8 @@ import CVEFeed from "@/components/CVEFeed";
 import SearchBar, { SearchFilters } from "@/components/SearchBar";
 import ThreatTrend from "@/components/ThreatTrend";
 import AIInsights from "@/components/AIInsights";
+import ThreatTimeline from "@/components/ThreatTimeline";
+import NetworkGraph from "@/components/NetworkGraph";
 
 const Index = () => {
   const [filters, setFilters] = useState<SearchFilters>({
@@ -51,6 +53,11 @@ const Index = () => {
           
           {/* CVE Feed */}
           <CVEFeed filters={filters} />
+          
+          {/* Advanced Visualizations */}
+          <ThreatTimeline />
+          
+          <NetworkGraph />
         </div>
       </main>
     </div>
