@@ -1,36 +1,40 @@
-import { Shield, Activity, AlertTriangle } from "lucide-react";
+import { Shield } from "lucide-react";
+import { ThemeToggle } from "./ThemeToggle";
+import { NotificationCenter } from "./NotificationCenter";
+import { UserMenu } from "./UserMenu";
+import { useAuth } from "@/contexts/AuthContext";
+import { Button } from "./ui/button";
+import { useNavigate } from "react-router-dom";
 
 const Header = () => {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+
   return (
-    <header className="border-b border-border bg-card">
+    <header className="bg-card border-b border-border sticky top-0 z-50 backdrop-blur-sm bg-card/95">
       <div className="container mx-auto px-6 py-4">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center space-x-3">
             <div className="p-2 rounded-lg bg-primary/10 border border-primary/30 glow-cyan">
-              <Shield className="w-8 h-8 text-primary" />
+              <Shield className="h-8 w-8 text-primary" />
             </div>
             <div>
               <h1 className="text-2xl font-bold text-primary">SentinelEye</h1>
               <p className="text-xs text-muted-foreground">Cyber Threat Intelligence Platform</p>
             </div>
           </div>
-          
-          <div className="flex items-center gap-6">
-            <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-secondary border border-border">
-              <Activity className="w-4 h-4 text-success" />
-              <div>
-                <p className="text-xs text-muted-foreground">System Status</p>
-                <p className="text-sm font-semibold text-success">Operational</p>
-              </div>
-            </div>
-            
-            <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-secondary border border-border">
-              <AlertTriangle className="w-4 h-4 text-warning" />
-              <div>
-                <p className="text-xs text-muted-foreground">Active Threats</p>
-                <p className="text-sm font-semibold text-warning">2,847</p>
-              </div>
-            </div>
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+            {user ? (
+              <>
+                <NotificationCenter />
+                <UserMenu />
+              </>
+            ) : (
+              <Button onClick={() => navigate("/auth")}>
+                Sign In
+              </Button>
+            )}
           </div>
         </div>
       </div>

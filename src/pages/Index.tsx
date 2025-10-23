@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import Header from "@/components/Header";
 import ThreatStats from "@/components/ThreatStats";
 import ThreatMap from "@/components/ThreatMap";
@@ -10,8 +11,17 @@ import ThreatTrend from "@/components/ThreatTrend";
 import AIInsights from "@/components/AIInsights";
 import ThreatTimeline from "@/components/ThreatTimeline";
 import NetworkGraph from "@/components/NetworkGraph";
+import { useAuth } from "@/contexts/AuthContext";
 
 const Index = () => {
+  const { user, loading } = useAuth();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!loading && !user) {
+      navigate("/auth");
+    }
+  }, [user, loading, navigate]);
   const [filters, setFilters] = useState<SearchFilters>({
     search: "",
     severity: [],
