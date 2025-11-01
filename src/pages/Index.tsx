@@ -15,6 +15,10 @@ import SentinelBot from "@/components/SentinelBot";
 import PredictiveAnalytics from "@/components/PredictiveAnalytics";
 import ThreatComparison from "@/components/ThreatComparison";
 import { useAuth } from "@/contexts/AuthContext";
+import { Button } from "@/components/ui/button";
+import { RefreshCw } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 const Index = () => {
   const { user, loading } = useAuth();
@@ -35,8 +39,31 @@ const Index = () => {
     country: []
   });
 
+  const [isSyncing, setIsSyncing] = useState(false);
+
   const handleSearch = (newFilters: SearchFilters) => {
     setFilters(newFilters);
+  };
+
+  const handleSyncThreats = async () => {
+    setIsSyncing(true);
+    toast.info("Syncing threat intelligence from NVD and AlienVault OTX...");
+    
+    try {
+      const { data, error } = await supabase.functions.invoke('sync-threat-intelligence');
+      
+      if (error) throw error;
+      
+      toast.success(data.message || `Successfully synced ${data.threatsAdded} threats`);
+      
+      // Refresh the page data
+      window.location.reload();
+    } catch (error) {
+      console.error('Error syncing threats:', error);
+      toast.error("Failed to sync threats. Please try again.");
+    } finally {
+      setIsSyncing(false);
+    }
   };
 
   return (
@@ -48,8 +75,20 @@ const Index = () => {
           {/* Stats Overview */}
           <ThreatStats />
           
-          {/* Search */}
-          <SearchBar onSearch={handleSearch} />
+          {/* Search and Sync */}
+          <div className="flex items-center gap-4">
+            <div className="flex-1">
+              <SearchBar onSearch={handleSearch} />
+            </div>
+            <Button 
+              onClick={handleSyncThreats}
+              disabled={isSyncing}
+              className="whitespace-nowrap"
+            >
+              <RefreshCw className={`h-4 w-4 mr-2 ${isSyncing ? 'animate-spin' : ''}`} />
+              {isSyncing ? 'Syncing...' : 'Sync Threats'}
+            </Button>
+          </div>
           
           {/* World Map */}
           <ThreatMap />
