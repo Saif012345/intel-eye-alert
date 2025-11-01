@@ -24,6 +24,8 @@ export interface SearchFilters {
   threatType: string[];
   startDate: string;
   endDate: string;
+  source: string[];
+  country: string[];
 }
 
 const SearchBar = ({ onSearch }: SearchBarProps) => {
@@ -32,9 +34,11 @@ const SearchBar = ({ onSearch }: SearchBarProps) => {
   const [threatType, setThreatType] = useState<string[]>([]);
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
+  const [source, setSource] = useState<string[]>([]);
+  const [country, setCountry] = useState<string[]>([]);
 
   const handleSearch = () => {
-    onSearch({ search, severity, threatType, startDate, endDate });
+    onSearch({ search, severity, threatType, startDate, endDate, source, country });
   };
 
   const handleExport = async () => {
@@ -43,7 +47,7 @@ const SearchBar = ({ onSearch }: SearchBarProps) => {
       
       const { data, error } = await supabase.functions.invoke('generate-report', {
         body: { 
-          filters: { search, severity, threatType, startDate, endDate }
+          filters: { search, severity, threatType, startDate, endDate, source, country }
         }
       });
 
@@ -71,7 +75,7 @@ const SearchBar = ({ onSearch }: SearchBarProps) => {
     }
   };
 
-  const activeFilters = severity.length + threatType.length + (startDate ? 1 : 0) + (endDate ? 1 : 0);
+  const activeFilters = severity.length + threatType.length + source.length + country.length + (startDate ? 1 : 0) + (endDate ? 1 : 0);
 
   return (
     <Card className="p-6 bg-card border-border">
@@ -141,6 +145,50 @@ const SearchBar = ({ onSearch }: SearchBarProps) => {
                         }}
                       />
                       <Label htmlFor={type} className="capitalize cursor-pointer">{type}</Label>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <h4 className="font-semibold mb-2">Source</h4>
+                <div className="space-y-2">
+                  {['internal', 'external', 'osint', 'threat_feed'].map((src) => (
+                    <div key={src} className="flex items-center space-x-2">
+                      <Checkbox
+                        id={src}
+                        checked={source.includes(src)}
+                        onCheckedChange={(checked) => {
+                          setSource(checked 
+                            ? [...source, src]
+                            : source.filter(s => s !== src)
+                          );
+                        }}
+                      />
+                      <Label htmlFor={src} className="capitalize cursor-pointer">
+                        {src.replace('_', ' ')}
+                      </Label>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <h4 className="font-semibold mb-2">Country</h4>
+                <div className="space-y-2">
+                  {['USA', 'China', 'Russia', 'Iran', 'North Korea'].map((c) => (
+                    <div key={c} className="flex items-center space-x-2">
+                      <Checkbox
+                        id={c}
+                        checked={country.includes(c)}
+                        onCheckedChange={(checked) => {
+                          setCountry(checked 
+                            ? [...country, c]
+                            : country.filter(cn => cn !== c)
+                          );
+                        }}
+                      />
+                      <Label htmlFor={c} className="cursor-pointer">{c}</Label>
                     </div>
                   ))}
                 </div>

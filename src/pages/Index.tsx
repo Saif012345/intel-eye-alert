@@ -11,6 +11,9 @@ import ThreatTrend from "@/components/ThreatTrend";
 import AIInsights from "@/components/AIInsights";
 import ThreatTimeline from "@/components/ThreatTimeline";
 import NetworkGraph from "@/components/NetworkGraph";
+import SentinelBot from "@/components/SentinelBot";
+import PredictiveAnalytics from "@/components/PredictiveAnalytics";
+import ThreatComparison from "@/components/ThreatComparison";
 import { useAuth } from "@/contexts/AuthContext";
 
 const Index = () => {
@@ -27,7 +30,9 @@ const Index = () => {
     severity: [],
     threatType: [],
     startDate: "",
-    endDate: ""
+    endDate: "",
+    source: [],
+    country: []
   });
 
   const handleSearch = (newFilters: SearchFilters) => {
@@ -64,11 +69,20 @@ const Index = () => {
           {/* CVE Feed */}
           <CVEFeed filters={filters} />
           
+          {/* Predictive Analytics */}
+          <PredictiveAnalytics />
+          
+          {/* Threat Comparison */}
+          <ThreatComparison />
+          
           {/* Advanced Visualizations */}
           <ThreatTimeline />
           
           <NetworkGraph />
         </div>
+        
+        {/* SentinelBot AI Chatbot */}
+        <SentinelBot />
       </main>
     </div>
   );
