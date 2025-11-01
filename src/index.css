@@ -53,6 +53,51 @@ All colors MUST be HSL.
     --chart-4: 150 100% 45%;
     --chart-5: 270 100% 50%;
   }
+
+  .light {
+    --background: 0 0% 100%;
+    --foreground: 220 25% 10%;
+
+    --card: 0 0% 98%;
+    --card-foreground: 220 25% 10%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 25% 10%;
+
+    --primary: 186 100% 40%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 220 15% 92%;
+    --secondary-foreground: 220 25% 10%;
+
+    --muted: 220 15% 95%;
+    --muted-foreground: 220 15% 40%;
+
+    --accent: 186 100% 40%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 100% 50%;
+    --destructive-foreground: 0 0% 100%;
+
+    --warning: 30 100% 50%;
+    --warning-foreground: 0 0% 100%;
+
+    --success: 150 100% 35%;
+    --success-foreground: 0 0% 100%;
+
+    --border: 220 20% 85%;
+    --input: 220 20% 90%;
+    --ring: 186 100% 40%;
+
+    --glow-cyan: 0 0 20px hsl(186 100% 40% / 0.3);
+    --glow-red: 0 0 20px hsl(0 100% 50% / 0.3);
+    
+    --chart-1: 186 100% 40%;
+    --chart-2: 0 100% 50%;
+    --chart-3: 30 100% 50%;
+    --chart-4: 150 100% 35%;
+    --chart-5: 270 100% 50%;
+  }
 }
 
 @layer base {
