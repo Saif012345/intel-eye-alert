@@ -14,6 +14,45 @@ export type Database = {
   }
   public: {
     Tables: {
+      notification_preferences: {
+        Row: {
+          alert_countries: string[] | null
+          alert_on_critical: boolean | null
+          alert_on_high: boolean | null
+          alert_on_low: boolean | null
+          alert_on_medium: boolean | null
+          alert_threat_types: string[] | null
+          created_at: string | null
+          id: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          alert_countries?: string[] | null
+          alert_on_critical?: boolean | null
+          alert_on_high?: boolean | null
+          alert_on_low?: boolean | null
+          alert_on_medium?: boolean | null
+          alert_threat_types?: string[] | null
+          created_at?: string | null
+          id?: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          alert_countries?: string[] | null
+          alert_on_critical?: boolean | null
+          alert_on_high?: boolean | null
+          alert_on_low?: boolean | null
+          alert_on_medium?: boolean | null
+          alert_threat_types?: string[] | null
+          created_at?: string | null
+          id?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       notifications: {
         Row: {
           created_at: string

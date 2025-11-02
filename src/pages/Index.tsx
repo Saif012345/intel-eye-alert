@@ -15,6 +15,8 @@ import SentinelBot from "@/components/SentinelBot";
 import PredictiveAnalytics from "@/components/PredictiveAnalytics";
 import ThreatComparison from "@/components/ThreatComparison";
 import NigeriaThreats from "@/components/NigeriaThreats";
+import RealTimeAlerts from "@/components/RealTimeAlerts";
+import AlertPreferences from "@/components/AlertPreferences";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { RefreshCw } from "lucide-react";
@@ -70,6 +72,7 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-background">
       <Header />
+      <RealTimeAlerts />
       
       <main className="container mx-auto px-6 py-8">
         <div className="space-y-6">
@@ -114,6 +117,9 @@ const Index = () => {
           
           {/* Nigeria Threat Intelligence */}
           <NigeriaThreats />
+          
+          {/* Real-Time Alert Preferences */}
+          <AlertPreferences />
           
           {/* Threat Comparison */}
           <ThreatComparison />
