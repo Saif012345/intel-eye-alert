@@ -75,12 +75,12 @@ Deno.serve(async (req) => {
           const description = cve.descriptions?.find((d: any) => d.lang === 'en')?.value || 'No description available';
           
           const baseScore = metrics?.cvssData?.baseScore || 5.0;
-          const severity = metrics?.cvssData?.baseSeverity || 
-            (baseScore >= 9.0 ? 'Critical' : baseScore >= 7.0 ? 'High' : baseScore >= 4.0 ? 'Medium' : 'Low');
+          const severity = metrics?.cvssData?.baseSeverity?.toLowerCase() || 
+            (baseScore >= 9.0 ? 'critical' : baseScore >= 7.0 ? 'high' : baseScore >= 4.0 ? 'medium' : 'low');
           
           threats.push({
             threat_type: 'vulnerability',
-            severity: severity.charAt(0).toUpperCase() + severity.slice(1),
+            severity: severity,
             title: cve.id || 'Unknown CVE',
             description: description.substring(0, 500),
             source: 'NVD',
@@ -120,8 +120,8 @@ Deno.serve(async (req) => {
             t.toLowerCase().includes('critical')
           );
           
-          const severity = hasHighThreat ? 'Critical' : 
-            tags.some((t: string) => t.toLowerCase().includes('malware')) ? 'High' : 'Medium';
+          const severity = hasHighThreat ? 'critical' : 
+            tags.some((t: string) => t.toLowerCase().includes('malware')) ? 'high' : 'medium';
           
           const threatType = tags.includes('malware') ? 'malware' :
             tags.includes('phishing') ? 'phishing' :
