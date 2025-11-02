@@ -51,6 +51,19 @@ Deno.serve(async (req) => {
     
     const threats: any[] = [];
     
+    // Helper function to extract country from text
+    const extractCountry = (text: string): string | null => {
+      const nigeriaKeywords = ['nigeria', 'nigerian', 'lagos', 'abuja', 'ng', 'naija'];
+      const lowerText = text.toLowerCase();
+      
+      if (nigeriaKeywords.some(keyword => lowerText.includes(keyword))) {
+        return 'Nigeria';
+      }
+      
+      // Add more countries as needed
+      return null;
+    };
+    
     // 1. Fetch recent CVEs from NVD
     console.log('Fetching CVEs from NVD...');
     try {
@@ -78,6 +91,8 @@ Deno.serve(async (req) => {
           const severity = metrics?.cvssData?.baseSeverity?.toLowerCase() || 
             (baseScore >= 9.0 ? 'critical' : baseScore >= 7.0 ? 'high' : baseScore >= 4.0 ? 'medium' : 'low');
           
+          const country = extractCountry(description);
+          
           threats.push({
             threat_type: 'vulnerability',
             severity: severity,
@@ -85,7 +100,7 @@ Deno.serve(async (req) => {
             description: description.substring(0, 500),
             source: 'NVD',
             indicator: cve.id,
-            country: null,
+            country,
           });
         }
       }
@@ -129,6 +144,9 @@ Deno.serve(async (req) => {
           
           const indicator = pulse.indicators?.[0]?.indicator || null;
           
+          const searchText = `${pulse.name} ${pulse.description || ''} ${tags.join(' ')}`;
+          const country = extractCountry(searchText);
+          
           threats.push({
             threat_type: threatType,
             severity,
@@ -136,7 +154,7 @@ Deno.serve(async (req) => {
             description: pulse.description?.substring(0, 500) || 'No description available',
             source: 'AlienVault OTX',
             indicator,
-            country: null,
+            country,
           });
         }
       }

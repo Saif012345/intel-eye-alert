@@ -14,6 +14,7 @@ import NetworkGraph from "@/components/NetworkGraph";
 import SentinelBot from "@/components/SentinelBot";
 import PredictiveAnalytics from "@/components/PredictiveAnalytics";
 import ThreatComparison from "@/components/ThreatComparison";
+import NigeriaThreats from "@/components/NigeriaThreats";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { RefreshCw } from "lucide-react";
@@ -110,6 +111,9 @@ const Index = () => {
           
           {/* Predictive Analytics */}
           <PredictiveAnalytics />
+          
+          {/* Nigeria Threat Intelligence */}
+          <NigeriaThreats />
           
           {/* Threat Comparison */}
           <ThreatComparison />
