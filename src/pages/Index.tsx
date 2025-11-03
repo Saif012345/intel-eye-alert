@@ -53,7 +53,18 @@ const Index = () => {
     toast.info("Syncing threat intelligence from NVD and AlienVault OTX...");
     
     try {
-      const { data, error } = await supabase.functions.invoke('sync-threat-intelligence');
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        toast.error("Authentication required. Please sign in.");
+        return;
+      }
+
+      const { data, error } = await supabase.functions.invoke('sync-threat-intelligence', {
+        headers: {
+          Authorization: `Bearer ${session.access_token}`
+        }
+      });
       
       if (error) throw error;
       
