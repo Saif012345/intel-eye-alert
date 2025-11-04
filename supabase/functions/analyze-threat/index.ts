@@ -16,6 +16,7 @@ serve(async (req) => {
     // Verify authentication
     const authHeader = req.headers.get('Authorization');
     if (!authHeader?.startsWith('Bearer ')) {
+      console.error('Missing or invalid Authorization header');
       return new Response(JSON.stringify({ error: 'Unauthorized' }), {
         status: 401,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -30,13 +31,26 @@ serve(async (req) => {
 
     const { data: { user }, error: authError } = await authClient.auth.getUser();
     if (authError || !user) {
+      console.error('Auth error:', authError);
       return new Response(JSON.stringify({ error: 'Invalid or expired token' }), {
         status: 401,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
+    console.log('User authenticated:', user.id);
+
     const { threatId, description, threatType, severity } = await req.json();
+    
+    if (!threatId) {
+      console.error('Missing threatId in request');
+      return new Response(JSON.stringify({ error: 'threatId is required' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    console.log('Analyzing threat:', threatId);
     
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) {
@@ -111,7 +125,16 @@ Provide a summary and risk insight.`;
 
     if (updateError) {
       console.error('Database update error:', updateError);
+      return new Response(JSON.stringify({ 
+        error: 'Failed to update threat in database',
+        details: updateError.message 
+      }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
+
+    console.log('Threat analysis completed successfully');
 
     return new Response(JSON.stringify({ 
       aiSummary,
