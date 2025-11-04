@@ -17,6 +17,7 @@ import ThreatComparison from "@/components/ThreatComparison";
 import NigeriaThreats from "@/components/NigeriaThreats";
 import RealTimeAlerts from "@/components/RealTimeAlerts";
 import AlertPreferences from "@/components/AlertPreferences";
+import ThreatAnalyticsDashboard from "@/components/ThreatAnalyticsDashboard";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { RefreshCw } from "lucide-react";
@@ -131,6 +132,9 @@ const Index = () => {
           
           {/* Real-Time Alert Preferences */}
           <AlertPreferences />
+          
+          {/* Threat Analytics Dashboard */}
+          <ThreatAnalyticsDashboard />
           
           {/* Threat Comparison */}
           <ThreatComparison />
