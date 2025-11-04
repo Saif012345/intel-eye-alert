@@ -17,11 +17,12 @@ const SentinelBot = () => {
   const [messages, setMessages] = useState<Message[]>([
     {
       role: 'assistant',
-      content: 'Hello! I\'m SentinelBot, your AI cybersecurity assistant. I can help you understand threats, analyze patterns, and provide security recommendations. How can I assist you today?'
+      content: 'Hello! I\'m SentinelBot, your AI cybersecurity assistant with access to live threat intelligence. I can:\n\n🔍 Search and analyze real threats in the database\n📊 Provide threat statistics and summaries\n🔗 Find related threats and attack patterns\n💡 Explain security concepts and recommendations\n\nTry asking me:\n• "What are the latest critical threats?"\n• "Show me ransomware threats from this week"\n• "Give me threat statistics for today"\n\nHow can I help secure your environment?'
     }
   ]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [toolsUsed, setToolsUsed] = useState<string[]>([]);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -60,6 +61,11 @@ const SentinelBot = () => {
       }
 
       setMessages([...newMessages, { role: 'assistant', content: data.response }]);
+      
+      if (data.tools_used && data.tools_used.length > 0) {
+        setToolsUsed(data.tools_used);
+        setTimeout(() => setToolsUsed([]), 3000); // Clear after 3 seconds
+      }
     } catch (error) {
       console.error('Chat error:', error);
       toast({
@@ -128,8 +134,13 @@ const SentinelBot = () => {
           ))}
           {isLoading && (
             <div className="flex justify-start">
-              <div className="bg-secondary text-secondary-foreground rounded-lg p-3">
+              <div className="bg-secondary text-secondary-foreground rounded-lg p-3 flex items-center gap-2">
                 <Loader2 className="h-4 w-4 animate-spin" />
+                {toolsUsed.length > 0 && (
+                  <span className="text-xs text-muted-foreground">
+                    Using: {toolsUsed.join(', ')}
+                  </span>
+                )}
               </div>
             </div>
           )}
