@@ -6,8 +6,15 @@ import {
   BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, 
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer 
 } from "recharts";
-import { TrendingUp, Globe, Target, Calendar } from "lucide-react";
+import { TrendingUp, Globe, Target, Calendar, Download, FileText, FileSpreadsheet } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar as CalendarUI } from "@/components/ui/calendar";
+import { format } from "date-fns";
+import jsPDF from "jspdf";
+import html2canvas from "html2canvas";
+import { useToast } from "@/hooks/use-toast";
 
 interface ThreatData {
   id: string;
@@ -53,16 +60,24 @@ const ThreatAnalyticsDashboard = () => {
   const [trendData, setTrendData] = useState<TrendData[]>([]);
   const [typeData, setTypeData] = useState<TypeData[]>([]);
   const [geoData, setGeoData] = useState<GeoData[]>([]);
+  const [dateRange, setDateRange] = useState<{ from: Date; to: Date }>({
+    from: new Date(new Date().setDate(new Date().getDate() - 30)),
+    to: new Date(),
+  });
+  const [isExporting, setIsExporting] = useState(false);
+  const { toast } = useToast();
 
   useEffect(() => {
     fetchThreats();
-  }, []);
+  }, [dateRange]);
 
   const fetchThreats = async () => {
     try {
       const { data, error } = await supabase
         .from('threats')
         .select('id, threat_type, severity, country, created_at')
+        .gte('created_at', dateRange.from.toISOString())
+        .lte('created_at', dateRange.to.toISOString())
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -73,8 +88,96 @@ const ThreatAnalyticsDashboard = () => {
       }
     } catch (error) {
       console.error('Error fetching threats:', error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch threat data",
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const exportToCSV = () => {
+    try {
+      setIsExporting(true);
+      
+      // Create CSV content
+      const headers = ['Date', 'Threat Type', 'Severity', 'Country'];
+      const rows = threats.map(threat => [
+        new Date(threat.created_at).toLocaleDateString(),
+        threat.threat_type,
+        threat.severity,
+        threat.country || 'N/A'
+      ]);
+
+      const csvContent = [
+        headers.join(','),
+        ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
+      ].join('\n');
+
+      // Download CSV
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = `threat-analytics-${format(dateRange.from, 'yyyy-MM-dd')}-to-${format(dateRange.to, 'yyyy-MM-dd')}.csv`;
+      link.click();
+
+      toast({
+        title: "Success",
+        description: "CSV report downloaded successfully",
+      });
+    } catch (error) {
+      console.error('Error exporting CSV:', error);
+      toast({
+        title: "Error",
+        description: "Failed to export CSV",
+        variant: "destructive",
+      });
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const exportToPDF = async () => {
+    try {
+      setIsExporting(true);
+      
+      const element = document.getElementById('analytics-dashboard');
+      if (!element) return;
+
+      const canvas = await html2canvas(element, {
+        scale: 2,
+        logging: false,
+        useCORS: true,
+      });
+
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF({
+        orientation: 'landscape',
+        unit: 'mm',
+        format: 'a4',
+      });
+
+      const imgWidth = 297; // A4 landscape width
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+      pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+      pdf.save(`threat-analytics-${format(dateRange.from, 'yyyy-MM-dd')}-to-${format(dateRange.to, 'yyyy-MM-dd')}.pdf`);
+
+      toast({
+        title: "Success",
+        description: "PDF report downloaded successfully",
+      });
+    } catch (error) {
+      console.error('Error exporting PDF:', error);
+      toast({
+        title: "Error",
+        description: "Failed to export PDF",
+        variant: "destructive",
+      });
+    } finally {
+      setIsExporting(false);
     }
   };
 
@@ -150,7 +253,68 @@ const ThreatAnalyticsDashboard = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" id="analytics-dashboard">
+      {/* Export Controls */}
+      <Card className="glass-card border-accent/20">
+        <CardContent className="pt-6">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div className="flex items-center gap-2">
+              <Calendar className="h-5 w-5 text-muted-foreground" />
+              <span className="text-sm font-medium">Date Range:</span>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" size="sm">
+                    {format(dateRange.from, 'MMM dd, yyyy')} - {format(dateRange.to, 'MMM dd, yyyy')}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <div className="p-4 space-y-4">
+                    <div>
+                      <p className="text-sm font-medium mb-2">From</p>
+                      <CalendarUI
+                        mode="single"
+                        selected={dateRange.from}
+                        onSelect={(date) => date && setDateRange({ ...dateRange, from: date })}
+                        disabled={(date) => date > new Date() || date > dateRange.to}
+                      />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium mb-2">To</p>
+                      <CalendarUI
+                        mode="single"
+                        selected={dateRange.to}
+                        onSelect={(date) => date && setDateRange({ ...dateRange, to: date })}
+                        disabled={(date) => date > new Date() || date < dateRange.from}
+                      />
+                    </div>
+                  </div>
+                </PopoverContent>
+              </Popover>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                onClick={exportToCSV}
+                disabled={isExporting || loading}
+                size="sm"
+                variant="outline"
+              >
+                <FileSpreadsheet className="h-4 w-4 mr-2" />
+                Export CSV
+              </Button>
+              <Button
+                onClick={exportToPDF}
+                disabled={isExporting || loading}
+                size="sm"
+                variant="outline"
+              >
+                <FileText className="h-4 w-4 mr-2" />
+                Export PDF
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Summary Cards */}
       <div className="grid gap-4 md:grid-cols-4">
         <Card className="glass-card border-accent/20">
