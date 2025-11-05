@@ -10,7 +10,7 @@ import { TrendingUp, Globe, Target, Calendar, Download, FileText, FileSpreadshee
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Calendar as CalendarUI } from "@/components/ui/calendar";
+import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
@@ -271,7 +271,7 @@ const ThreatAnalyticsDashboard = () => {
                   <div className="p-4 space-y-4">
                     <div>
                       <p className="text-sm font-medium mb-2">From</p>
-                      <CalendarUI
+                      <Calendar
                         mode="single"
                         selected={dateRange.from}
                         onSelect={(date) => date && setDateRange({ ...dateRange, from: date })}
@@ -280,7 +280,7 @@ const ThreatAnalyticsDashboard = () => {
                     </div>
                     <div>
                       <p className="text-sm font-medium mb-2">To</p>
-                      <CalendarUI
+                      <Calendar
                         mode="single"
                         selected={dateRange.to}
                         onSelect={(date) => date && setDateRange({ ...dateRange, to: date })}
