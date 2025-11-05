@@ -72,6 +72,7 @@ Deno.serve(async (req) => {
     
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const otxApiKey = Deno.env.get('ALIENVAULT_OTX_API_KEY')!;
+    const shodanApiKey = Deno.env.get('SHODAN_API_KEY');
     
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
     
@@ -212,7 +213,87 @@ Deno.serve(async (req) => {
       console.error('Error fetching OTX data:', error);
     }
     
-    // 3. Insert threats into database
+    // 3. Fetch exposed devices from Shodan
+    if (shodanApiKey) {
+      console.log('Fetching exposed devices from Shodan...');
+      try {
+        // Search for devices with common vulnerabilities in Nigeria
+        const shodanQueries = [
+          'country:NG',  // All devices in Nigeria
+          'country:NG port:22',  // SSH services
+          'country:NG port:3389',  // RDP services
+          'country:NG port:445',  // SMB services
+        ];
+        
+        for (const query of shodanQueries) {
+          try {
+            const shodanResponse = await fetch(
+              `https://api.shodan.io/shodan/host/search?key=${shodanApiKey}&query=${encodeURIComponent(query)}&minify=true`,
+              {
+                headers: {
+                  'Accept': 'application/json',
+                }
+              }
+            );
+            
+            if (shodanResponse.ok) {
+              const shodanData = await shodanResponse.json();
+              const matches = shodanData.matches || [];
+              
+              console.log(`Found ${matches.length} Shodan results for query: ${query}`);
+              
+              // Limit to 20 results per query to avoid too much data
+              for (const match of matches.slice(0, 20)) {
+                const ip = match.ip_str || 'Unknown';
+                const port = match.port || 0;
+                const org = match.org || 'Unknown';
+                const isp = match.isp || 'Unknown';
+                const vulns = match.vulns || [];
+                
+                // Determine severity based on vulnerabilities and open ports
+                let severity = 'medium';
+                if (vulns.length > 0) {
+                  severity = 'critical';
+                } else if ([22, 3389, 445, 23].includes(port)) {
+                  severity = 'high';  // Potentially dangerous ports
+                }
+                
+                const threatType = port === 22 ? 'exposed-ssh' :
+                  port === 3389 ? 'exposed-rdp' :
+                  port === 445 ? 'exposed-smb' :
+                  port === 23 ? 'exposed-telnet' :
+                  'exposed-device';
+                
+                const vulnsList = vulns.length > 0 ? ` Vulnerabilities: ${vulns.join(', ')}` : '';
+                
+                threats.push({
+                  threat_type: threatType,
+                  severity,
+                  title: `Exposed ${match.product || 'Device'} on ${ip}:${port}`,
+                  description: `Organization: ${org}, ISP: ${isp}.${vulnsList}`,
+                  source: 'Shodan',
+                  indicator: ip,
+                  country: 'Nigeria',
+                });
+              }
+            } else {
+              console.error(`Shodan API error for query "${query}": ${shodanResponse.status} ${shodanResponse.statusText}`);
+            }
+            
+            // Rate limiting - wait 1 second between queries
+            await new Promise(resolve => setTimeout(resolve, 1000));
+          } catch (queryError) {
+            console.error(`Error with Shodan query "${query}":`, queryError);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching Shodan data:', error);
+      }
+    } else {
+      console.log('Shodan API key not configured, skipping Shodan integration');
+    }
+    
+    // 4. Insert threats into database
     console.log(`Inserting ${threats.length} threats into database...`);
     
     if (threats.length > 0) {
@@ -233,7 +314,7 @@ Deno.serve(async (req) => {
       JSON.stringify({ 
         success: true, 
         threatsAdded: threats.length,
-        message: `Successfully synced ${threats.length} threats from NVD and AlienVault OTX`
+        message: `Successfully synced ${threats.length} threats from NVD, AlienVault OTX${shodanApiKey ? ', and Shodan' : ''}`
       }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },

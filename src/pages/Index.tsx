@@ -19,6 +19,7 @@ import RealTimeAlerts from "@/components/RealTimeAlerts";
 import AlertPreferences from "@/components/AlertPreferences";
 import ThreatAnalyticsDashboard from "@/components/ThreatAnalyticsDashboard";
 import OTXDashboard from "@/components/OTXDashboard";
+import ShodanDashboard from "@/components/ShodanDashboard";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { RefreshCw } from "lucide-react";
@@ -136,6 +137,9 @@ const Index = () => {
           
           {/* AlienVault OTX Integration */}
           <OTXDashboard />
+          
+          {/* Shodan Integration */}
+          <ShodanDashboard />
           
           {/* Threat Analytics Dashboard */}
           <ThreatAnalyticsDashboard />
