@@ -304,7 +304,7 @@ Keep responses professional, clear, and actionable with concrete data.`
             tool_call_id: toolCall.id,
             role: 'tool',
             name: toolName,
-            content: JSON.stringify({ error: error.message })
+            content: JSON.stringify({ error: error instanceof Error ? error.message : 'Unknown error' })
           });
         }
       }

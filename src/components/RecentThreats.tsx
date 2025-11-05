@@ -60,26 +60,12 @@ const RecentThreats = ({ filters }: RecentThreatsProps) => {
   const handleAnalyze = async (threat: Threat) => {
     setAnalyzingId(threat.id);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (!session) {
-        toast({ 
-          title: "Authentication required", 
-          description: "Please sign in to analyze threats",
-          variant: "destructive" 
-        });
-        return;
-      }
-
       const { data, error } = await supabase.functions.invoke('analyze-threat', {
         body: {
           threatId: threat.id,
           description: threat.description || threat.title,
           threatType: threat.threat_type,
           severity: threat.severity
-        },
-        headers: {
-          Authorization: `Bearer ${session.access_token}`
         }
       });
 
