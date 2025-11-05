@@ -138,7 +138,7 @@ Deno.serve(async (req) => {
     console.log('Fetching pulses from AlienVault OTX...');
     try {
       const otxResponse = await fetch(
-        'https://otx.alienvault.com/api/v1/pulses/subscribed?limit=20',
+        'https://otx.alienvault.com/api/v1/pulses/subscribed?limit=50',
         {
           headers: {
             'X-OTX-API-KEY': otxApiKey,
@@ -166,23 +166,47 @@ Deno.serve(async (req) => {
           
           const threatType = tags.includes('malware') ? 'malware' :
             tags.includes('phishing') ? 'phishing' :
-            tags.includes('exploit') ? 'exploit' : 'threat';
-          
-          const indicator = pulse.indicators?.[0]?.indicator || null;
+            tags.includes('exploit') ? 'exploit' :
+            tags.includes('ransomware') ? 'ransomware' :
+            tags.some((t: string) => t.toLowerCase().includes('apt')) ? 'apt' : 'threat';
           
           const searchText = `${pulse.name} ${pulse.description || ''} ${tags.join(' ')}`;
           const country = extractCountry(searchText);
           
+          // Add main pulse as threat
           threats.push({
             threat_type: threatType,
             severity,
             title: pulse.name.substring(0, 200),
             description: pulse.description?.substring(0, 500) || 'No description available',
             source: 'AlienVault OTX',
-            indicator,
+            indicator: null,
             country,
           });
+          
+          // Add IOCs (Indicators of Compromise) as separate threats
+          if (pulse.indicators && pulse.indicators.length > 0) {
+            const iocLimit = 10; // Limit IOCs per pulse to avoid too many entries
+            for (const ioc of pulse.indicators.slice(0, iocLimit)) {
+              const iocType = ioc.type === 'IPv4' || ioc.type === 'IPv6' ? 'malicious-ip' :
+                ioc.type === 'domain' ? 'malicious-domain' :
+                ioc.type === 'FileHash-MD5' || ioc.type === 'FileHash-SHA256' ? 'malware-hash' :
+                'ioc';
+              
+              threats.push({
+                threat_type: iocType,
+                severity: severity,
+                title: `${ioc.type}: ${ioc.indicator.substring(0, 100)}`,
+                description: `IOC from pulse: ${pulse.name}`,
+                source: 'AlienVault OTX - IOC',
+                indicator: ioc.indicator,
+                country,
+              });
+            }
+          }
         }
+      } else {
+        console.error(`OTX API error: ${otxResponse.status} ${otxResponse.statusText}`);
       }
     } catch (error) {
       console.error('Error fetching OTX data:', error);

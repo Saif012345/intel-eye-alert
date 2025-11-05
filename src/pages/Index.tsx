@@ -18,6 +18,7 @@ import NigeriaThreats from "@/components/NigeriaThreats";
 import RealTimeAlerts from "@/components/RealTimeAlerts";
 import AlertPreferences from "@/components/AlertPreferences";
 import ThreatAnalyticsDashboard from "@/components/ThreatAnalyticsDashboard";
+import OTXDashboard from "@/components/OTXDashboard";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { RefreshCw } from "lucide-react";
@@ -132,6 +133,9 @@ const Index = () => {
           
           {/* Real-Time Alert Preferences */}
           <AlertPreferences />
+          
+          {/* AlienVault OTX Integration */}
+          <OTXDashboard />
           
           {/* Threat Analytics Dashboard */}
           <ThreatAnalyticsDashboard />
