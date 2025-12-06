@@ -1,30 +1,16 @@
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import Header from "@/components/Header";
-import ThreatStats from "@/components/ThreatStats";
-import ThreatMap from "@/components/ThreatMap";
-import ThreatChart from "@/components/ThreatChart";
-import RecentThreats from "@/components/RecentThreats";
-import CVEFeed from "@/components/CVEFeed";
-import SearchBar, { SearchFilters } from "@/components/SearchBar";
-import ThreatTrend from "@/components/ThreatTrend";
-import AIInsights from "@/components/AIInsights";
-import ThreatTimeline from "@/components/ThreatTimeline";
-import NetworkGraph from "@/components/NetworkGraph";
-import SentinelBot from "@/components/SentinelBot";
-import PredictiveAnalytics from "@/components/PredictiveAnalytics";
-import ThreatComparison from "@/components/ThreatComparison";
-import NigeriaThreats from "@/components/NigeriaThreats";
-import RealTimeAlerts from "@/components/RealTimeAlerts";
-import AlertPreferences from "@/components/AlertPreferences";
-import ThreatAnalyticsDashboard from "@/components/ThreatAnalyticsDashboard";
-import OTXDashboard from "@/components/OTXDashboard";
-import ShodanDashboard from "@/components/ShodanDashboard";
 import { useAuth } from "@/contexts/AuthContext";
-import { Button } from "@/components/ui/button";
-import { RefreshCw } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
+import { DashboardLayout } from "@/components/layout/DashboardLayout";
+import { StatCards } from "@/components/dashboard/StatCards";
+import { AttackMapWidget } from "@/components/dashboard/AttackMapWidget";
+import { RecentAlertsTable } from "@/components/dashboard/RecentAlertsTable";
+import { ThreatTrendChart } from "@/components/dashboard/ThreatTrendChart";
+import { ThreatTypeChart } from "@/components/dashboard/ThreatTypeChart";
+import { LatestIntelFeed } from "@/components/dashboard/LatestIntelFeed";
+import { AbuseIPDBWidget } from "@/components/dashboard/AbuseIPDBWidget";
+import SentinelBot from "@/components/SentinelBot";
+import RealTimeAlerts from "@/components/RealTimeAlerts";
 
 const Index = () => {
   const { user, loading } = useAuth();
@@ -35,128 +21,48 @@ const Index = () => {
       navigate("/auth");
     }
   }, [user, loading, navigate]);
-  const [filters, setFilters] = useState<SearchFilters>({
-    search: "",
-    severity: [],
-    threatType: [],
-    startDate: "",
-    endDate: "",
-    source: [],
-    country: []
-  });
 
-  const [isSyncing, setIsSyncing] = useState(false);
-
-  const handleSearch = (newFilters: SearchFilters) => {
-    setFilters(newFilters);
-  };
-
-  const handleSyncThreats = async () => {
-    setIsSyncing(true);
-    toast.info("Syncing threat intelligence from NVD and AlienVault OTX...");
-    
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (!session) {
-        toast.error("Authentication required. Please sign in.");
-        return;
-      }
-
-      const { data, error } = await supabase.functions.invoke('sync-threat-intelligence', {
-        headers: {
-          Authorization: `Bearer ${session.access_token}`
-        }
-      });
-      
-      if (error) throw error;
-      
-      toast.success(data.message || `Successfully synced ${data.threatsAdded} threats`);
-      
-      // Refresh the page data
-      window.location.reload();
-    } catch (error) {
-      console.error('Error syncing threats:', error);
-      toast.error("Failed to sync threats. Please try again.");
-    } finally {
-      setIsSyncing(false);
-    }
-  };
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-background">
-      <Header />
+    <DashboardLayout>
       <RealTimeAlerts />
       
-      <main className="container mx-auto px-6 py-8">
-        <div className="space-y-6">
-          {/* Stats Overview */}
-          <ThreatStats />
+      <div className="space-y-6">
+        {/* Stat Cards */}
+        <StatCards />
+        
+        {/* Main Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Attack Map - spans 2 columns */}
+          <AttackMapWidget />
           
-          {/* Search and Sync */}
-          <div className="flex items-center gap-4">
-            <div className="flex-1">
-              <SearchBar onSearch={handleSearch} />
-            </div>
-            <Button 
-              onClick={handleSyncThreats}
-              disabled={isSyncing}
-              className="whitespace-nowrap"
-            >
-              <RefreshCw className={`h-4 w-4 mr-2 ${isSyncing ? 'animate-spin' : ''}`} />
-              {isSyncing ? 'Syncing...' : 'Sync Threats'}
-            </Button>
-          </div>
-          
-          {/* World Map */}
-          <ThreatMap />
-          
-          {/* AI Insights and Trend */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <AIInsights />
-            <ThreatTrend />
-          </div>
-          
-          {/* Charts and Feeds Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <ThreatChart filters={filters} />
-            <RecentThreats filters={filters} />
-          </div>
-          
-          {/* CVE Feed */}
-          <CVEFeed filters={filters} />
-          
-          {/* Predictive Analytics */}
-          <PredictiveAnalytics />
-          
-          {/* Nigeria Threat Intelligence */}
-          <NigeriaThreats />
-          
-          {/* Real-Time Alert Preferences */}
-          <AlertPreferences />
-          
-          {/* AlienVault OTX Integration */}
-          <OTXDashboard />
-          
-          {/* Shodan Integration */}
-          <ShodanDashboard />
-          
-          {/* Threat Analytics Dashboard */}
-          <ThreatAnalyticsDashboard />
-          
-          {/* Threat Comparison */}
-          <ThreatComparison />
-          
-          {/* Advanced Visualizations */}
-          <ThreatTimeline />
-          
-          <NetworkGraph />
+          {/* Latest Intel Feed */}
+          <LatestIntelFeed />
         </div>
         
-        {/* SentinelBot AI Chatbot */}
-        <SentinelBot />
-      </main>
-    </div>
+        {/* Charts Row */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <ThreatTrendChart />
+          <ThreatTypeChart />
+        </div>
+        
+        {/* Alerts and AbuseIPDB */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <RecentAlertsTable />
+          <AbuseIPDBWidget />
+        </div>
+      </div>
+      
+      {/* SentinelBot AI Chatbot */}
+      <SentinelBot />
+    </DashboardLayout>
   );
 };
 

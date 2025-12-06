@@ -73,6 +73,7 @@ Deno.serve(async (req) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const otxApiKey = Deno.env.get('ALIENVAULT_OTX_API_KEY')!;
     const shodanApiKey = Deno.env.get('SHODAN_API_KEY');
+    const abuseipdbApiKey = Deno.env.get('ABUSEIPDB_API_KEY');
     
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
     
@@ -213,7 +214,52 @@ Deno.serve(async (req) => {
       console.error('Error fetching OTX data:', error);
     }
     
-    // 3. Fetch exposed devices from Shodan
+    // 3. Fetch IP reputation data from AbuseIPDB
+    if (abuseipdbApiKey) {
+      console.log('Fetching IP reputation data from AbuseIPDB...');
+      try {
+        const abuseResponse = await fetch(
+          'https://api.abuseipdb.com/api/v2/blacklist?limit=50&confidenceMinimum=90',
+          {
+            headers: {
+              'Key': abuseipdbApiKey,
+              'Accept': 'application/json',
+            }
+          }
+        );
+        
+        if (abuseResponse.ok) {
+          const abuseData = await abuseResponse.json();
+          const blacklistedIPs = abuseData.data || [];
+          
+          console.log(`Found ${blacklistedIPs.length} blacklisted IPs from AbuseIPDB`);
+          
+          for (const ipData of blacklistedIPs.slice(0, 30)) {
+            const ip = ipData.ipAddress || 'Unknown';
+            const abuseScore = ipData.abuseConfidenceScore || 0;
+            const countryCode = ipData.countryCode || 'Unknown';
+            
+            let severity = 'medium';
+            if (abuseScore >= 90) severity = 'critical';
+            else if (abuseScore >= 70) severity = 'high';
+            
+            threats.push({
+              threat_type: 'malicious-ip',
+              severity,
+              title: `Malicious IP: ${ip}`,
+              description: `Abuse Confidence Score: ${abuseScore}%. Country: ${countryCode}. Reported for malicious activities.`,
+              source: 'AbuseIPDB',
+              indicator: ip,
+              country: countryCode === 'NG' ? 'Nigeria' : null,
+            });
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching AbuseIPDB data:', error);
+      }
+    }
+    
+    // 4. Fetch exposed devices from Shodan
     if (shodanApiKey) {
       console.log('Fetching exposed devices from Shodan...');
       try {
@@ -293,7 +339,7 @@ Deno.serve(async (req) => {
       console.log('Shodan API key not configured, skipping Shodan integration');
     }
     
-    // 4. Insert threats into database
+    // 5. Insert threats into database
     console.log(`Inserting ${threats.length} threats into database...`);
     
     if (threats.length > 0) {
@@ -314,7 +360,7 @@ Deno.serve(async (req) => {
       JSON.stringify({ 
         success: true, 
         threatsAdded: threats.length,
-        message: `Successfully synced ${threats.length} threats from NVD, AlienVault OTX${shodanApiKey ? ', and Shodan' : ''}`
+        message: `Successfully synced ${threats.length} threats from NVD, AlienVault OTX${abuseipdbApiKey ? ', AbuseIPDB' : ''}${shodanApiKey ? ', and Shodan' : ''}`
       }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
