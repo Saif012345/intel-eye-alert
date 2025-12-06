@@ -7,6 +7,14 @@ import { AuthProvider } from "./contexts/AuthContext";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
+import ThreatFeeds from "./pages/ThreatFeeds";
+import Actors from "./pages/Actors";
+import IOCs from "./pages/IOCs";
+import AttackMap from "./pages/AttackMap";
+import Alerts from "./pages/Alerts";
+import AIDefense from "./pages/AIDefense";
+import Settings from "./pages/Settings";
+import Docs from "./pages/Docs";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -22,7 +30,14 @@ const App = () => (
             <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/auth" element={<Auth />} />
-              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+              <Route path="/threat-feeds" element={<ThreatFeeds />} />
+              <Route path="/actors" element={<Actors />} />
+              <Route path="/iocs" element={<IOCs />} />
+              <Route path="/attack-map" element={<AttackMap />} />
+              <Route path="/alerts" element={<Alerts />} />
+              <Route path="/ai-defense" element={<AIDefense />} />
+              <Route path="/settings" element={<Settings />} />
+              <Route path="/docs" element={<Docs />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </TooltipProvider>
