@@ -20,7 +20,12 @@ const quickPrompts = [
   { icon: Sparkles, text: "What security recommendations do you have?", label: "Recommendations" },
 ];
 
-const SentinelBotEmbed = () => {
+interface SentinelBotEmbedProps {
+  externalMessage?: string;
+  onMessageProcessed?: () => void;
+}
+
+const SentinelBotEmbed = ({ externalMessage, onMessageProcessed }: SentinelBotEmbedProps) => {
   const [messages, setMessages] = useState<Message[]>([
     {
       role: 'assistant',
@@ -37,6 +42,14 @@ const SentinelBotEmbed = () => {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages]);
+
+  // Handle external messages from investigation workflow
+  useEffect(() => {
+    if (externalMessage) {
+      handleSend(externalMessage);
+      onMessageProcessed?.();
+    }
+  }, [externalMessage]);
 
   const handleSend = async (messageText?: string) => {
     const userMessage = (messageText || input).trim();
