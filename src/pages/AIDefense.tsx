@@ -1,14 +1,26 @@
+import { useState } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Brain, Activity, Zap, TrendingUp, MessageSquare } from "lucide-react";
+import { Brain, Activity, Zap, TrendingUp, MessageSquare, ClipboardList } from "lucide-react";
 import DefenseMetrics from "@/components/ai-defense/DefenseMetrics";
 import AnomalyDetection from "@/components/ai-defense/AnomalyDetection";
 import AutomatedResponseRules from "@/components/ai-defense/AutomatedResponseRules";
 import AIThreatAnalysis from "@/components/ai-defense/AIThreatAnalysis";
 import SentinelBotEmbed from "@/components/ai-defense/SentinelBotEmbed";
+import ThreatInvestigation from "@/components/ai-defense/ThreatInvestigation";
 import PredictiveAnalytics from "@/components/PredictiveAnalytics";
 
 const AIDefense = () => {
+  const [botMessage, setBotMessage] = useState<string | undefined>();
+
+  const handleAskBot = (message: string) => {
+    setBotMessage(message);
+  };
+
+  const handleMessageProcessed = () => {
+    setBotMessage(undefined);
+  };
+
   return (
     <DashboardLayout>
       <div className="space-y-6">
@@ -18,7 +30,7 @@ const AIDefense = () => {
             AI Defense Center
           </h1>
           <p className="text-muted-foreground">
-            ML-powered threat detection, automated response, and conversational threat analysis
+            ML-powered threat detection, guided investigations, and conversational threat analysis
           </p>
         </div>
 
@@ -26,8 +38,12 @@ const AIDefense = () => {
         <DefenseMetrics />
 
         {/* Main Content Tabs */}
-        <Tabs defaultValue="chat" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-5 lg:w-auto lg:inline-flex">
+        <Tabs defaultValue="investigate" className="space-y-4">
+          <TabsList className="grid w-full grid-cols-6 lg:w-auto lg:inline-flex">
+            <TabsTrigger value="investigate" className="gap-2">
+              <ClipboardList className="h-4 w-4" />
+              <span className="hidden sm:inline">Investigate</span>
+            </TabsTrigger>
             <TabsTrigger value="chat" className="gap-2">
               <MessageSquare className="h-4 w-4" />
               <span className="hidden sm:inline">SentinelBot</span>
@@ -49,6 +65,16 @@ const AIDefense = () => {
               <span className="hidden sm:inline">Predictive</span>
             </TabsTrigger>
           </TabsList>
+
+          <TabsContent value="investigate" className="space-y-4">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <ThreatInvestigation onAskBot={handleAskBot} />
+              <SentinelBotEmbed 
+                externalMessage={botMessage} 
+                onMessageProcessed={handleMessageProcessed}
+              />
+            </div>
+          </TabsContent>
 
           <TabsContent value="chat" className="space-y-4">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
