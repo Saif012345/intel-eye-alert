@@ -4,11 +4,14 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Switch } from "@/components/ui/switch";
 import { ComposableMap, Geographies, Geography, Marker, Line } from "react-simple-maps";
-import { useEffect, useState, Suspense, lazy } from "react";
+import { useEffect, useState, Suspense, lazy, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Globe, Target, Activity, MapPin, Filter, Maximize2, Minimize2, Map } from "lucide-react";
+import { Globe, Target, Activity, MapPin, Filter, Maximize2, Minimize2, Map, Volume2, VolumeX, Layers } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { toast } from "sonner";
+import { playAlertSound, playAttackSound } from "@/lib/sounds";
 
 const Globe3D = lazy(() => import("@/components/dashboard/Globe3D"));
 
@@ -36,6 +39,12 @@ interface AttackFlow {
   to: [number, number];
   severity: string;
   progress: number;
+}
+
+interface HeatmapPoint {
+  coordinates: [number, number];
+  intensity: number;
+  country: string;
 }
 
 const countryCoordinates: Record<string, [number, number]> = {
@@ -68,16 +77,78 @@ const AttackMap = () => {
   const [threats, setThreats] = useState<ThreatLocation[]>([]);
   const [attackFlows, setAttackFlows] = useState<AttackFlow[]>([]);
   const [countryStats, setCountryStats] = useState<CountryStats[]>([]);
+  const [heatmapData, setHeatmapData] = useState<HeatmapPoint[]>([]);
   const [selectedThreatType, setSelectedThreatType] = useState<string>("all");
   const [selectedSeverity, setSelectedSeverity] = useState<string>("all");
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [mapView, setMapView] = useState<"2d" | "3d">("2d");
+  const [soundEnabled, setSoundEnabled] = useState(true);
+  const [showHeatmap, setShowHeatmap] = useState(true);
+  const lastThreatIdRef = useRef<string | null>(null);
 
+  // Initial fetch
   useEffect(() => {
     fetchThreats();
     const interval = setInterval(fetchThreats, 10000);
     return () => clearInterval(interval);
   }, [selectedThreatType, selectedSeverity]);
+
+  // Real-time subscription for new threats
+  useEffect(() => {
+    const channel = supabase
+      .channel('attack-map-threats')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'threats'
+        },
+        (payload) => {
+          const newThreat = payload.new as any;
+          
+          // Play sound for new threats
+          if (soundEnabled) {
+            if (newThreat.severity === 'critical') {
+              playAlertSound('critical');
+            } else if (newThreat.severity === 'high') {
+              playAlertSound('high');
+            } else {
+              playAttackSound();
+            }
+          }
+          
+          // Show toast notification for critical/high threats
+          if (newThreat.severity === 'critical' || newThreat.severity === 'high') {
+            toast.error(`New ${newThreat.severity.toUpperCase()} Threat Detected`, {
+              description: `${newThreat.title} from ${newThreat.country || 'Unknown'}`,
+              duration: 5000,
+            });
+          }
+          
+          // Update threats list
+          const coords = countryCoordinates[newThreat.country || "Unknown"] || 
+            defaultCoords[Math.floor(Math.random() * defaultCoords.length)];
+          
+          const newLocation: ThreatLocation = {
+            id: newThreat.id,
+            coordinates: coords,
+            severity: newThreat.severity,
+            country: newThreat.country || 'Unknown',
+            title: newThreat.title,
+            threat_type: newThreat.threat_type,
+            created_at: newThreat.created_at
+          };
+          
+          setThreats(prev => [newLocation, ...prev.slice(0, 49)]);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [soundEnabled]);
 
   // Animate attack flows
   useEffect(() => {
@@ -139,6 +210,17 @@ const AttackMap = () => {
       
       setCountryStats(stats);
 
+      // Generate heatmap data based on country density
+      const maxCount = Math.max(...Object.values(statsMap), 1);
+      const heatmap: HeatmapPoint[] = Object.entries(statsMap)
+        .map(([country, count]) => ({
+          country,
+          coordinates: countryCoordinates[country] || [0, 0] as [number, number],
+          intensity: count / maxCount
+        }))
+        .filter(h => h.coordinates[0] !== 0 || h.coordinates[1] !== 0);
+      setHeatmapData(heatmap);
+
       // Generate animated attack flows
       const targetCoords: [number, number] = [-95, 38];
       const newFlows: AttackFlow[] = [];
@@ -149,7 +231,7 @@ const AttackMap = () => {
             id: `flow-${i}`,
             from: loc.coordinates,
             to: targetCoords,
-            severity: locations[i].severity,
+            severity: loc.severity,
             progress: Math.random() * 100
           });
         }
@@ -224,6 +306,25 @@ const AttackMap = () => {
                 <SelectItem value="low">Low</SelectItem>
               </SelectContent>
             </Select>
+            
+            <div className="flex items-center gap-2 bg-secondary/50 px-3 py-1.5 rounded-lg border border-border">
+              <Layers className="h-4 w-4 text-muted-foreground" />
+              <span className="text-xs">Heatmap</span>
+              <Switch
+                checked={showHeatmap}
+                onCheckedChange={setShowHeatmap}
+                className="scale-75"
+              />
+            </div>
+            
+            <Button
+              variant={soundEnabled ? "default" : "outline"}
+              size="icon"
+              onClick={() => setSoundEnabled(!soundEnabled)}
+              title={soundEnabled ? "Mute sounds" : "Enable sounds"}
+            >
+              {soundEnabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
+            </Button>
             
             <Button
               variant="outline"
@@ -360,6 +461,32 @@ const AttackMap = () => {
                         }
                       </Geographies>
 
+                      {/* Heatmap overlay */}
+                      {showHeatmap && heatmapData.map((point, idx) => (
+                        <Marker key={`heatmap-${idx}`} coordinates={point.coordinates}>
+                          {/* Large outer glow */}
+                          <circle
+                            r={60 * point.intensity + 20}
+                            fill="#ef4444"
+                            opacity={0.08 * point.intensity}
+                            style={{ filter: 'blur(20px)' }}
+                          />
+                          {/* Medium glow */}
+                          <circle
+                            r={40 * point.intensity + 15}
+                            fill="#f97316"
+                            opacity={0.12 * point.intensity}
+                            style={{ filter: 'blur(12px)' }}
+                          />
+                          {/* Inner glow */}
+                          <circle
+                            r={25 * point.intensity + 10}
+                            fill="#fbbf24"
+                            opacity={0.15 * point.intensity}
+                            style={{ filter: 'blur(6px)' }}
+                          />
+                        </Marker>
+                      ))}
                       {/* Animated attack flow lines with glow */}
                       {attackFlows.map((flow) => (
                         <g key={flow.id}>
