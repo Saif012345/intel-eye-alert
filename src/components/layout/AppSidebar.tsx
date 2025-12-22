@@ -10,7 +10,8 @@ import {
   FileText,
   Shield,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  X
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
@@ -28,6 +29,7 @@ import {
   SidebarTrigger,
   useSidebar,
 } from "@/components/ui/sidebar";
+import { Button } from "@/components/ui/button";
 
 const mainNavItems = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
@@ -46,8 +48,15 @@ const toolsNavItems = [
 
 export function AppSidebar() {
   const location = useLocation();
-  const { state } = useSidebar();
+  const { state, isMobile, setOpenMobile } = useSidebar();
   const isCollapsed = state === "collapsed";
+
+  const handleNavClick = () => {
+    // Close mobile sidebar after navigation
+    if (isMobile) {
+      setOpenMobile(false);
+    }
+  };
 
   return (
     <Sidebar 
@@ -55,17 +64,30 @@ export function AppSidebar() {
       className="border-r border-sidebar-border bg-sidebar-background"
     >
       <SidebarHeader className="border-b border-sidebar-border p-4">
-        <div className="flex items-center gap-3">
-          <div className="p-2 rounded-lg bg-primary/10 border border-primary/30 glow-cyan">
-            <Shield className="h-6 w-6 text-primary" />
-          </div>
-          {!isCollapsed && (
-            <div className="flex flex-col">
-              <span className="font-bold text-lg text-primary">SentinelEye</span>
-              <span className="text-[10px] text-muted-foreground uppercase tracking-wider">
-                Threat Intelligence
-              </span>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-primary/10 border border-primary/30 glow-cyan">
+              <Shield className="h-6 w-6 text-primary" />
             </div>
+            {!isCollapsed && (
+              <div className="flex flex-col">
+                <span className="font-bold text-lg text-primary">SentinelEye</span>
+                <span className="text-[10px] text-muted-foreground uppercase tracking-wider">
+                  Threat Intelligence
+                </span>
+              </div>
+            )}
+          </div>
+          {/* Mobile Close Button */}
+          {isMobile && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setOpenMobile(false)}
+              className="h-8 w-8 text-muted-foreground hover:text-foreground"
+            >
+              <X className="h-5 w-5" />
+            </Button>
           )}
         </div>
       </SidebarHeader>
@@ -90,7 +112,11 @@ export function AppSidebar() {
                         isActive && "bg-primary/10 text-primary border-l-2 border-primary"
                       )}
                     >
-                      <NavLink to={item.url} className="flex items-center gap-3">
+                      <NavLink 
+                        to={item.url} 
+                        className="flex items-center gap-3"
+                        onClick={handleNavClick}
+                      >
                         <item.icon className={cn(
                           "h-5 w-5",
                           isActive ? "text-primary" : "text-muted-foreground"
@@ -131,7 +157,11 @@ export function AppSidebar() {
                         isActive && "bg-primary/10 text-primary border-l-2 border-primary"
                       )}
                     >
-                      <NavLink to={item.url} className="flex items-center gap-3">
+                      <NavLink 
+                        to={item.url} 
+                        className="flex items-center gap-3"
+                        onClick={handleNavClick}
+                      >
                         <item.icon className={cn(
                           "h-5 w-5",
                           isActive ? "text-primary" : "text-muted-foreground"
@@ -154,18 +184,20 @@ export function AppSidebar() {
         </SidebarGroup>
       </SidebarContent>
 
-      <SidebarFooter className="border-t border-sidebar-border p-2">
-        <SidebarTrigger className="w-full flex items-center justify-center p-2 rounded-lg hover:bg-sidebar-accent transition-colors">
-          {isCollapsed ? (
-            <ChevronRight className="h-4 w-4 text-muted-foreground" />
-          ) : (
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <ChevronLeft className="h-4 w-4" />
-              <span className="text-xs">Collapse</span>
-            </div>
-          )}
-        </SidebarTrigger>
-      </SidebarFooter>
+      {!isMobile && (
+        <SidebarFooter className="border-t border-sidebar-border p-2">
+          <SidebarTrigger className="w-full flex items-center justify-center p-2 rounded-lg hover:bg-sidebar-accent transition-colors">
+            {isCollapsed ? (
+              <ChevronRight className="h-4 w-4 text-muted-foreground" />
+            ) : (
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <ChevronLeft className="h-4 w-4" />
+                <span className="text-xs">Collapse</span>
+              </div>
+            )}
+          </SidebarTrigger>
+        </SidebarFooter>
+      )}
     </Sidebar>
   );
 }
