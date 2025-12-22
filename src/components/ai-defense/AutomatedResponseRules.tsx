@@ -10,7 +10,7 @@ import {
   Bell, 
   Database,
   Plus,
-  Settings
+  Activity
 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -122,40 +122,52 @@ const AutomatedResponseRules = () => {
   const totalTriggers = rules.reduce((acc, r) => acc + r.triggerCount, 0);
 
   return (
-    <Card className="glass border-border/50">
-      <CardHeader>
+    <Card className="glass border-border/50 overflow-hidden">
+      <div className="absolute inset-0 bg-gradient-to-br from-warning/5 via-transparent to-primary/5 pointer-events-none" />
+      <CardHeader className="relative">
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2">
-            <Zap className="h-5 w-5 text-warning" />
+            <div className="h-8 w-8 rounded-lg bg-warning/20 flex items-center justify-center">
+              <Zap className="h-5 w-5 text-warning" />
+            </div>
             Automated Response Rules
           </CardTitle>
-          <Button size="sm" variant="outline" className="gap-1">
+          <Button size="sm" variant="outline" className="gap-1 border-primary/30 hover:bg-primary/10">
             <Plus className="h-4 w-4" />
             Add Rule
           </Button>
         </div>
-        <div className="flex gap-4 text-sm">
-          <span className="text-muted-foreground">
-            Active: <span className="text-success font-medium">{activeRules}/{rules.length}</span>
-          </span>
-          <span className="text-muted-foreground">
-            Total Triggers: <span className="text-primary font-medium">{totalTriggers}</span>
-          </span>
+        <div className="flex gap-4 text-sm mt-2">
+          <div className="flex items-center gap-2">
+            <div className="h-2 w-2 rounded-full bg-success animate-pulse" />
+            <span className="text-muted-foreground">
+              Active: <span className="text-success font-medium">{activeRules}/{rules.length}</span>
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Activity className="h-4 w-4 text-primary" />
+            <span className="text-muted-foreground">
+              Total Triggers: <span className="text-primary font-medium">{totalTriggers}</span>
+            </span>
+          </div>
         </div>
       </CardHeader>
-      <CardContent className="space-y-3">
-        {rules.map((rule) => (
+      <CardContent className="relative space-y-3">
+        {rules.map((rule, index) => (
           <div
             key={rule.id}
-            className={`p-4 rounded-lg border transition-all ${
+            className={`p-4 rounded-xl border transition-all duration-300 hover:shadow-lg ${
               rule.enabled 
-                ? 'bg-secondary/50 border-border hover:border-primary/50' 
+                ? 'bg-secondary/50 border-border hover:border-primary/50 hover:shadow-primary/5' 
                 : 'bg-secondary/20 border-border/50 opacity-60'
             }`}
+            style={{ animationDelay: `${index * 50}ms` }}
           >
             <div className="flex items-start justify-between mb-2">
-              <div className="flex items-center gap-2">
-                <div className={`p-1.5 rounded ${rule.enabled ? 'bg-primary/20 text-primary' : 'bg-muted text-muted-foreground'}`}>
+              <div className="flex items-center gap-3">
+                <div className={`p-2 rounded-lg transition-colors ${
+                  rule.enabled ? 'bg-primary/20 text-primary' : 'bg-muted text-muted-foreground'
+                }`}>
                   {getIcon(rule.icon)}
                 </div>
                 <div>
@@ -170,6 +182,7 @@ const AutomatedResponseRules = () => {
                 <Switch
                   checked={rule.enabled}
                   onCheckedChange={() => toggleRule(rule.id)}
+                  className="data-[state=checked]:bg-primary"
                 />
               </div>
             </div>
@@ -180,7 +193,10 @@ const AutomatedResponseRules = () => {
                 </span>
               </div>
               <div className="flex items-center gap-4 text-muted-foreground">
-                <span>Triggered: {rule.triggerCount}x</span>
+                <span className="flex items-center gap-1">
+                  <Activity className="h-3 w-3" />
+                  {rule.triggerCount}x
+                </span>
                 {rule.lastTriggered && <span>Last: {rule.lastTriggered}</span>}
               </div>
             </div>
