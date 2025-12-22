@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Bell, Search, RefreshCw } from "lucide-react";
+import { Bell, Search, RefreshCw, Menu, Shield } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -9,12 +9,14 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useSidebar } from "@/components/ui/sidebar";
 
 export const TopNav = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   const [isSyncing, setIsSyncing] = useState(false);
+  const { toggleSidebar, isMobile } = useSidebar();
 
   const handleSyncThreats = async () => {
     setIsSyncing(true);
@@ -48,10 +50,34 @@ export const TopNav = () => {
 
   return (
     <header className="sticky top-0 z-50 h-16 border-b border-border bg-card/80 backdrop-blur-xl">
-      <div className="h-full px-6 flex items-center justify-between">
-        {/* Search */}
-        <div className="flex-1 max-w-xl">
-          <div className="relative">
+      <div className="h-full px-4 md:px-6 flex items-center justify-between gap-4">
+        {/* Mobile Menu Button & Logo */}
+        <div className="flex items-center gap-3">
+          {isMobile && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={toggleSidebar}
+              className="md:hidden h-9 w-9"
+            >
+              <Menu className="h-5 w-5" />
+            </Button>
+          )}
+          
+          {/* Mobile Logo */}
+          {isMobile && (
+            <div className="flex items-center gap-2 md:hidden">
+              <div className="p-1.5 rounded-lg bg-primary/10 border border-primary/30">
+                <Shield className="h-5 w-5 text-primary" />
+              </div>
+              <span className="font-bold text-primary">SentinelEye</span>
+            </div>
+          )}
+        </div>
+
+        {/* Search - Hidden on mobile, shown on larger screens */}
+        <div className="hidden md:flex flex-1 max-w-xl">
+          <div className="relative w-full">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               type="search"
@@ -64,7 +90,16 @@ export const TopNav = () => {
         </div>
 
         {/* Actions */}
-        <div className="flex items-center gap-3 ml-4">
+        <div className="flex items-center gap-2 md:gap-3">
+          {/* Mobile Search Button */}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="md:hidden h-9 w-9"
+          >
+            <Search className="h-5 w-5" />
+          </Button>
+
           <Button
             variant="outline"
             size="sm"
@@ -74,6 +109,17 @@ export const TopNav = () => {
           >
             <RefreshCw className={`h-4 w-4 ${isSyncing ? 'animate-spin' : ''}`} />
             <span>{isSyncing ? 'Syncing...' : 'Sync Intel'}</span>
+          </Button>
+
+          {/* Mobile Sync Button */}
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={handleSyncThreats}
+            disabled={isSyncing}
+            className="md:hidden h-9 w-9"
+          >
+            <RefreshCw className={`h-4 w-4 ${isSyncing ? 'animate-spin' : ''}`} />
           </Button>
           
           <ThemeToggle />
@@ -86,9 +132,11 @@ export const TopNav = () => {
           ) : (
             <Button 
               onClick={() => navigate("/auth")}
+              size="sm"
               className="bg-primary text-primary-foreground hover:bg-primary/90"
             >
-              Sign In
+              <span className="hidden sm:inline">Sign In</span>
+              <span className="sm:hidden">Login</span>
             </Button>
           )}
         </div>
