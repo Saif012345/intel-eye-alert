@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Activity, AlertCircle, TrendingUp, Zap } from "lucide-react";
+import { Activity, AlertCircle, TrendingUp, Zap, Gauge } from "lucide-react";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -34,7 +34,6 @@ const AnomalyDetection = () => {
 
       if (!threats) return;
 
-      // Calculate various anomaly metrics
       const now = new Date();
       const last24h = threats.filter(t => 
         new Date(t.created_at) > new Date(now.getTime() - 24 * 60 * 60 * 1000)
@@ -96,7 +95,6 @@ const AnomalyDetection = () => {
 
       setAnomalies(anomalyData);
       
-      // Calculate overall health score
       const criticalCount = anomalyData.filter(a => a.status === 'critical').length;
       const warningCount = anomalyData.filter(a => a.status === 'warning').length;
       setOverallScore(Math.max(0, 100 - (criticalCount * 25) - (warningCount * 10)));
@@ -129,6 +127,14 @@ const AnomalyDetection = () => {
     return 'text-destructive';
   };
 
+  const getProgressColor = (status: string) => {
+    switch (status) {
+      case 'critical': return '[&>div]:bg-destructive';
+      case 'warning': return '[&>div]:bg-warning';
+      default: return '[&>div]:bg-success';
+    }
+  };
+
   if (isLoading) {
     return (
       <Card className="glass border-border/50">
@@ -150,33 +156,42 @@ const AnomalyDetection = () => {
   }
 
   return (
-    <Card className="glass border-border/50">
-      <CardHeader>
+    <Card className="glass border-border/50 overflow-hidden">
+      <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-accent/5 pointer-events-none" />
+      <CardHeader className="relative">
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2">
-            <Activity className="h-5 w-5 text-primary" />
+            <div className="h-8 w-8 rounded-lg bg-primary/20 flex items-center justify-center">
+              <Activity className="h-5 w-5 text-primary" />
+            </div>
             Anomaly Detection
           </CardTitle>
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground">Health Score:</span>
-            <span className={`text-2xl font-bold ${getScoreColor(overallScore)}`}>
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
+              <Gauge className="h-4 w-4 text-muted-foreground" />
+              <span className="text-sm text-muted-foreground">Health:</span>
+            </div>
+            <div className={`text-2xl font-bold ${getScoreColor(overallScore)} animate-pulse`}>
               {overallScore}%
-            </span>
+            </div>
           </div>
         </div>
         <p className="text-sm text-muted-foreground">Real-time ML-based threat pattern analysis</p>
       </CardHeader>
-      <CardContent className="space-y-4">
-        {anomalies.map((anomaly) => (
+      <CardContent className="relative space-y-4">
+        {anomalies.map((anomaly, index) => (
           <div
             key={anomaly.id}
-            className="p-4 rounded-lg bg-secondary/50 border border-border hover:border-primary/50 transition-colors"
+            className="p-4 rounded-xl bg-secondary/50 border border-border hover:border-primary/50 transition-all duration-300 hover:shadow-lg hover:shadow-primary/5"
+            style={{ animationDelay: `${index * 100}ms` }}
           >
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-2">
-                {anomaly.status === 'critical' && <AlertCircle className="h-4 w-4 text-destructive animate-pulse" />}
-                {anomaly.status === 'warning' && <Zap className="h-4 w-4 text-warning" />}
-                {anomaly.status === 'normal' && <TrendingUp className="h-4 w-4 text-success" />}
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-3">
+                <div className={`p-2 rounded-lg ${anomaly.status === 'critical' ? 'bg-destructive/20' : anomaly.status === 'warning' ? 'bg-warning/20' : 'bg-success/20'}`}>
+                  {anomaly.status === 'critical' && <AlertCircle className="h-4 w-4 text-destructive animate-pulse" />}
+                  {anomaly.status === 'warning' && <Zap className="h-4 w-4 text-warning" />}
+                  {anomaly.status === 'normal' && <TrendingUp className="h-4 w-4 text-success" />}
+                </div>
                 <span className="font-medium">{anomaly.type}</span>
               </div>
               <Badge variant="outline" className={getStatusBadge(anomaly.status)}>
@@ -186,15 +201,17 @@ const AnomalyDetection = () => {
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Current Score</span>
-                <span className={getStatusColor(anomaly.status)}>{anomaly.score.toFixed(1)}%</span>
+                <span className={`font-semibold ${getStatusColor(anomaly.status)}`}>{anomaly.score.toFixed(1)}%</span>
               </div>
               <Progress 
                 value={Math.min(100, anomaly.score)} 
-                className="h-2"
+                className={`h-2 ${getProgressColor(anomaly.status)}`}
               />
               <div className="flex justify-between text-xs text-muted-foreground">
                 <span>Baseline: {anomaly.baseline}%</span>
-                <span>Deviation: {anomaly.deviation > 0 ? '+' : ''}{anomaly.deviation.toFixed(1)}%</span>
+                <span className={anomaly.deviation > 0 ? 'text-destructive' : 'text-success'}>
+                  Deviation: {anomaly.deviation > 0 ? '+' : ''}{anomaly.deviation.toFixed(1)}%
+                </span>
               </div>
             </div>
           </div>

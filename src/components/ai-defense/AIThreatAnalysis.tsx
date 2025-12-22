@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Brain, Loader2, AlertTriangle, Shield, Target, RefreshCw } from "lucide-react";
+import { Brain, Loader2, AlertTriangle, Shield, Target, RefreshCw, Sparkles, Lightbulb } from "lucide-react";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -39,7 +39,6 @@ const AIThreatAnalysis = () => {
         return;
       }
 
-      // Analyze threat patterns
       const criticalThreats = threats.filter(t => t.severity === 'critical');
       const aptThreats = threats.filter(t => t.threat_type === 'apt');
       const exploitThreats = threats.filter(t => t.threat_type === 'exploit');
@@ -97,7 +96,6 @@ const AIThreatAnalysis = () => {
         });
       }
 
-      // Add general security posture insight
       generatedInsights.push({
         id: '4',
         title: 'Security Posture Assessment',
@@ -141,16 +139,22 @@ const AIThreatAnalysis = () => {
   };
 
   return (
-    <Card className="glass border-border/50">
-      <CardHeader>
+    <Card className="glass border-border/50 overflow-hidden">
+      <div className="absolute inset-0 bg-gradient-to-br from-accent/5 via-transparent to-primary/5 pointer-events-none" />
+      <CardHeader className="relative">
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2">
-            <Brain className="h-5 w-5 text-accent" />
+            <div className="relative">
+              <div className="absolute inset-0 bg-accent/30 rounded-lg blur-md animate-pulse" />
+              <div className="relative h-8 w-8 rounded-lg bg-accent/20 flex items-center justify-center">
+                <Brain className="h-5 w-5 text-accent" />
+              </div>
+            </div>
             AI Threat Analysis
           </CardTitle>
           <div className="flex items-center gap-2">
             {lastAnalysis && (
-              <span className="text-xs text-muted-foreground">
+              <span className="text-xs text-muted-foreground bg-secondary/50 px-2 py-1 rounded-md">
                 Last: {lastAnalysis}
               </span>
             )}
@@ -159,6 +163,7 @@ const AIThreatAnalysis = () => {
               variant="outline"
               onClick={generateInsights}
               disabled={isAnalyzing}
+              className="gap-1 border-accent/30 hover:bg-accent/10"
             >
               {isAnalyzing ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -168,14 +173,18 @@ const AIThreatAnalysis = () => {
             </Button>
           </div>
         </div>
-        <p className="text-sm text-muted-foreground">
+        <p className="text-sm text-muted-foreground flex items-center gap-2">
+          <Sparkles className="h-4 w-4 text-accent" />
           Deep-dive analysis with AI-powered recommendations
         </p>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="relative space-y-4">
         {isAnalyzing ? (
           <div className="flex flex-col items-center justify-center py-12">
-            <Brain className="h-12 w-12 text-primary animate-pulse mb-4" />
+            <div className="relative">
+              <div className="absolute inset-0 bg-primary/30 rounded-full blur-xl animate-pulse" />
+              <Brain className="relative h-12 w-12 text-primary animate-bounce mb-4" />
+            </div>
             <p className="text-muted-foreground">Analyzing threat patterns...</p>
           </div>
         ) : insights.length === 0 ? (
@@ -183,14 +192,17 @@ const AIThreatAnalysis = () => {
             No threats to analyze. Sync threat intelligence to get started.
           </div>
         ) : (
-          insights.map((insight) => (
+          insights.map((insight, index) => (
             <div
               key={insight.id}
-              className="p-4 rounded-lg bg-secondary/50 border border-border hover:border-primary/50 transition-colors"
+              className="p-4 rounded-xl bg-secondary/50 border border-border hover:border-primary/50 transition-all duration-300 hover:shadow-lg hover:shadow-primary/5"
+              style={{ animationDelay: `${index * 100}ms` }}
             >
               <div className="flex items-start justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  {getSeverityIcon(insight.severity)}
+                <div className="flex items-center gap-3">
+                  <div className={`p-2 rounded-lg ${insight.severity === 'critical' ? 'bg-destructive/20' : insight.severity === 'high' ? 'bg-orange-500/20' : 'bg-primary/20'}`}>
+                    {getSeverityIcon(insight.severity)}
+                  </div>
                   <h4 className="font-semibold">{insight.title}</h4>
                 </div>
                 <div className="flex items-center gap-2">
@@ -205,19 +217,23 @@ const AIThreatAnalysis = () => {
               
               <p className="text-sm text-muted-foreground mb-3">{insight.analysis}</p>
               
-              <div className="mb-3">
-                <h5 className="text-xs font-medium text-warning mb-2">AI Recommendations:</h5>
+              <div className="mb-3 p-3 rounded-lg bg-warning/5 border border-warning/20">
+                <h5 className="text-xs font-medium text-warning mb-2 flex items-center gap-1">
+                  <Lightbulb className="h-3 w-3" />
+                  AI Recommendations:
+                </h5>
                 <ul className="space-y-1">
                   {insight.recommendations.map((rec, idx) => (
                     <li key={idx} className="text-xs text-muted-foreground flex items-start gap-2">
-                      <span className="text-primary">•</span>
+                      <span className="text-primary mt-0.5">•</span>
                       {rec}
                     </li>
                   ))}
                 </ul>
               </div>
               
-              <div className="text-xs text-muted-foreground">
+              <div className="text-xs text-muted-foreground flex items-center gap-1">
+                <Target className="h-3 w-3" />
                 Related threats analyzed: {insight.relatedThreats}
               </div>
             </div>

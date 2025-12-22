@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
-import { Bot, Send, Loader2, Sparkles, Shield, Search, BarChart3, Trash2 } from "lucide-react";
+import { Bot, Send, Loader2, Sparkles, Shield, Search, BarChart3, Trash2, Zap } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -43,7 +43,6 @@ const SentinelBotEmbed = ({ externalMessage, onMessageProcessed }: SentinelBotEm
     }
   }, [messages]);
 
-  // Handle external messages from investigation workflow
   useEffect(() => {
     if (externalMessage) {
       handleSend(externalMessage);
@@ -102,18 +101,29 @@ const SentinelBotEmbed = ({ externalMessage, onMessageProcessed }: SentinelBotEm
   };
 
   return (
-    <Card className="glass border-border/50 h-[600px] flex flex-col">
-      <CardHeader className="pb-3">
+    <Card className="glass border-border/50 h-[600px] flex flex-col overflow-hidden">
+      <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-accent/5 pointer-events-none" />
+      <CardHeader className="relative pb-3">
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2">
-            <div className="h-8 w-8 rounded-full bg-primary/20 flex items-center justify-center">
-              <Bot className="h-5 w-5 text-primary" />
+            <div className="relative">
+              <div className="absolute inset-0 bg-primary/30 rounded-full blur-lg animate-pulse" />
+              <div className="relative h-10 w-10 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center">
+                <Bot className="h-5 w-5 text-primary-foreground" />
+              </div>
             </div>
-            SentinelBot
+            <div>
+              <span className="gradient-text">SentinelBot</span>
+              <div className="flex items-center gap-1 mt-0.5">
+                <div className="h-2 w-2 rounded-full bg-success animate-pulse" />
+                <span className="text-xs text-muted-foreground">Online</span>
+              </div>
+            </div>
           </CardTitle>
           <div className="flex items-center gap-2">
             {toolsUsed.length > 0 && (
-              <Badge variant="outline" className="bg-primary/10 text-primary border-primary/30 animate-pulse">
+              <Badge variant="outline" className="bg-primary/10 text-primary border-primary/30 animate-pulse gap-1">
+                <Zap className="h-3 w-3" />
                 {toolsUsed.join(', ')}
               </Badge>
             )}
@@ -121,18 +131,19 @@ const SentinelBotEmbed = ({ externalMessage, onMessageProcessed }: SentinelBotEm
               variant="ghost"
               size="icon"
               onClick={clearChat}
-              className="h-8 w-8 text-muted-foreground hover:text-destructive"
+              className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
             >
               <Trash2 className="h-4 w-4" />
             </Button>
           </div>
         </div>
-        <p className="text-sm text-muted-foreground">
+        <p className="text-sm text-muted-foreground flex items-center gap-2">
+          <Sparkles className="h-4 w-4 text-primary" />
           AI-powered threat analysis with live database access
         </p>
       </CardHeader>
 
-      <CardContent className="flex-1 flex flex-col p-0 overflow-hidden">
+      <CardContent className="relative flex-1 flex flex-col p-0 overflow-hidden">
         {/* Quick Prompts */}
         {messages.length <= 1 && (
           <div className="px-4 pb-3 flex flex-wrap gap-2">
@@ -143,9 +154,9 @@ const SentinelBotEmbed = ({ externalMessage, onMessageProcessed }: SentinelBotEm
                 size="sm"
                 onClick={() => handleSend(prompt.text)}
                 disabled={isLoading}
-                className="gap-1 text-xs bg-secondary/50 hover:bg-secondary"
+                className="gap-1.5 text-xs bg-secondary/50 hover:bg-primary/10 hover:border-primary/50 transition-all"
               >
-                <prompt.icon className="h-3 w-3" />
+                <prompt.icon className="h-3 w-3 text-primary" />
                 {prompt.label}
               </Button>
             ))}
@@ -161,9 +172,9 @@ const SentinelBotEmbed = ({ externalMessage, onMessageProcessed }: SentinelBotEm
                 className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
               >
                 <div
-                  className={`max-w-[85%] rounded-lg p-3 ${
+                  className={`max-w-[85%] rounded-2xl p-3 ${
                     msg.role === 'user'
-                      ? 'bg-primary text-primary-foreground'
+                      ? 'bg-gradient-to-br from-primary to-primary/80 text-primary-foreground shadow-lg shadow-primary/20'
                       : 'bg-secondary/70 text-secondary-foreground border border-border/50'
                   }`}
                 >
@@ -179,8 +190,11 @@ const SentinelBotEmbed = ({ externalMessage, onMessageProcessed }: SentinelBotEm
             ))}
             {isLoading && (
               <div className="flex justify-start">
-                <div className="bg-secondary/70 border border-border/50 rounded-lg p-3 flex items-center gap-2">
-                  <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                <div className="bg-secondary/70 border border-border/50 rounded-2xl p-3 flex items-center gap-2">
+                  <div className="relative">
+                    <div className="absolute inset-0 bg-primary/30 rounded-full blur-sm animate-pulse" />
+                    <Loader2 className="relative h-4 w-4 animate-spin text-primary" />
+                  </div>
                   <span className="text-sm text-muted-foreground">Analyzing...</span>
                 </div>
               </div>
@@ -189,21 +203,21 @@ const SentinelBotEmbed = ({ externalMessage, onMessageProcessed }: SentinelBotEm
         </ScrollArea>
 
         {/* Input */}
-        <div className="p-4 border-t border-border/50 bg-secondary/30">
+        <div className="p-4 border-t border-border/50 bg-secondary/30 backdrop-blur-sm">
           <div className="flex gap-2">
             <Input
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleSend()}
               placeholder="Ask about threats, vulnerabilities, attack patterns..."
-              className="flex-1 bg-background/50 border-border/50"
+              className="flex-1 bg-background/50 border-border/50 focus:border-primary/50"
               disabled={isLoading}
             />
             <Button
               onClick={() => handleSend()}
               disabled={isLoading || !input.trim()}
               size="icon"
-              className="bg-primary hover:bg-primary/90"
+              className="bg-gradient-to-br from-primary to-accent hover:opacity-90 shadow-lg shadow-primary/20"
             >
               <Send className="h-4 w-4" />
             </Button>
