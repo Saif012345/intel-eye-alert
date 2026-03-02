@@ -91,14 +91,7 @@ export const TopNav = () => {
 
         {/* Actions */}
         <div className="flex items-center gap-2 md:gap-3">
-          {/* Mobile Search Button */}
-          <Button
-            variant="ghost"
-            size="icon"
-            className="md:hidden h-9 w-9"
-          >
-            <Search className="h-5 w-5" />
-          </Button>
+          {/* Actions */}
 
           <Button
             variant="outline"
