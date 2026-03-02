@@ -2,6 +2,7 @@ import { useCallback } from "react";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "./AppSidebar";
 import { TopNav } from "./TopNav";
+import { MobileBottomNav } from "./MobileBottomNav";
 import { usePullToRefresh } from "@/hooks/use-pull-to-refresh";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { RefreshCw } from "lucide-react";
@@ -33,7 +34,7 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
           <TopNav />
           <main
             ref={containerRef as React.RefObject<HTMLElement>}
-            className="flex-1 p-4 md:p-6 overflow-auto relative"
+            className="flex-1 p-4 md:p-6 pb-20 md:pb-6 overflow-auto relative"
           >
             {/* Pull-to-refresh indicator (mobile only) */}
             {isMobile && (pullDistance > 0 || isRefreshing) && (
@@ -67,6 +68,7 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
             {children}
           </main>
         </div>
+        {isMobile && <MobileBottomNav />}
       </div>
     </SidebarProvider>
   );
