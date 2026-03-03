@@ -7,9 +7,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ComposableMap, Geographies, Geography, Marker, Line } from "react-simple-maps";
-import { useEffect, useState, Suspense, lazy, useCallback } from "react";
+import { useEffect, useState, useRef, Suspense, lazy, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Globe, Target, Activity, MapPin, Maximize2, Minimize2, Map, Volume2, VolumeX, Layers } from "lucide-react";
+import { Globe, Target, Activity, MapPin, Maximize2, Minimize2, Map, Volume2, VolumeX, Layers, Zap } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { playAlertSound, playAttackSound } from "@/lib/sounds";
@@ -72,6 +72,67 @@ const attackTypeConfig: Record<string, { color: string; label: string }> = {
   ransomware: { color: "#ec4899", label: "Ransomware" },
 };
 
+// Timeline bar component
+const TimelineBar = ({ threats }: { threats: ThreatLocation[] }) => {
+  const now = Date.now();
+  const timeWindow = 24 * 60 * 60 * 1000; // 24 hours
+  const bucketCount = 48; // 30-min buckets
+  const bucketSize = timeWindow / bucketCount;
+
+  const buckets = Array.from({ length: bucketCount }, (_, i) => {
+    const bucketStart = now - timeWindow + i * bucketSize;
+    const bucketEnd = bucketStart + bucketSize;
+    return threats.filter((t) => {
+      const ts = new Date(t.created_at).getTime();
+      return ts >= bucketStart && ts < bucketEnd;
+    }).length;
+  });
+
+  const maxCount = Math.max(...buckets, 1);
+
+  return (
+    <div className="w-full bg-[hsl(220,45%,6%)] border-t border-cyan-900/30 px-4 py-3">
+      <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center gap-2">
+          <Activity className="h-3 w-3 text-cyan-400" />
+          <span className="text-[10px] font-bold text-cyan-400 uppercase tracking-wider">Attack Timeline — Last 24h</span>
+        </div>
+        <span className="text-[10px] text-cyan-200/40">{threats.length} total events</span>
+      </div>
+      <div className="flex items-end gap-[2px] h-12">
+        {buckets.map((count, i) => {
+          const height = count > 0 ? Math.max((count / maxCount) * 100, 8) : 2;
+          const severity = count > maxCount * 0.7 ? "#ef4444" : count > maxCount * 0.4 ? "#f97316" : count > 0 ? "#22d3ee" : "hsl(220,40%,15%)";
+          return (
+            <div
+              key={i}
+              className="flex-1 rounded-t-sm transition-all duration-300 relative group cursor-pointer"
+              style={{
+                height: `${height}%`,
+                backgroundColor: severity,
+                boxShadow: count > 0 ? `0 0 4px ${severity}60` : "none",
+                opacity: count > 0 ? 0.8 : 0.3,
+              }}
+            >
+              {count > 0 && (
+                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 hidden group-hover:block z-10">
+                  <div className="bg-[hsl(220,45%,12%)] border border-cyan-900/40 px-2 py-1 rounded text-[9px] text-cyan-100 whitespace-nowrap">
+                    {count} attack{count > 1 ? "s" : ""}
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+      <div className="flex items-center justify-between mt-1">
+        <span className="text-[9px] text-cyan-200/30">24h ago</span>
+        <span className="text-[9px] text-cyan-200/30">Now</span>
+      </div>
+    </div>
+  );
+};
+
 const AttackMap = () => {
   const [threats, setThreats] = useState<ThreatLocation[]>([]);
   const [attackFlows, setAttackFlows] = useState<AttackFlow[]>([]);
@@ -84,6 +145,8 @@ const AttackMap = () => {
   const [enabledTypes, setEnabledTypes] = useState<Set<string>>(
     new Set(Object.keys(attackTypeConfig))
   );
+  const [attacksPerSecond, setAttacksPerSecond] = useState(0);
+  const attackTimestamps = useRef<number[]>([]);
 
   const toggleType = (type: string) => {
     setEnabledTypes((prev) => {
@@ -94,12 +157,23 @@ const AttackMap = () => {
     });
   };
 
+  // Track attacks per second
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const now = Date.now();
+      attackTimestamps.current = attackTimestamps.current.filter((ts) => now - ts < 10000);
+      setAttacksPerSecond(Math.round((attackTimestamps.current.length / 10) * 10) / 10);
+    }, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
   // Real-time subscription
   useEffect(() => {
     const channel = supabase
       .channel("attack-map-threats")
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "threats" }, (payload) => {
         const n = payload.new as any;
+        attackTimestamps.current.push(Date.now());
         if (soundEnabled) {
           if (n.severity === "critical") playAlertSound("critical");
           else if (n.severity === "high") playAlertSound("high");
@@ -137,13 +211,17 @@ const AttackMap = () => {
       threat_type: t.threat_type,
       created_at: t.created_at,
     }));
-    // Add jitter
     locations.forEach((l) => {
       l.coordinates = [l.coordinates[0] + (Math.random() - 0.5) * 5, l.coordinates[1] + (Math.random() - 0.5) * 3];
     });
     setThreats(locations);
 
-    // Country stats
+    // Simulate some attacks/sec from existing data
+    if (attackTimestamps.current.length === 0) {
+      const simulated = data.length / 15;
+      setAttacksPerSecond(Math.round(simulated * 10) / 10);
+    }
+
     const statsMap: Record<string, number> = {};
     data.forEach((t) => { const c = t.country || "Unknown"; statsMap[c] = (statsMap[c] || 0) + 1; });
     setCountryStats(
@@ -153,7 +231,6 @@ const AttackMap = () => {
         .slice(0, 10)
     );
 
-    // Attack flows
     const flows: AttackFlow[] = locations.slice(0, 20).map((loc, i) => ({
       id: `flow-${i}`,
       from: loc.coordinates,
@@ -198,6 +275,14 @@ const AttackMap = () => {
             <p className="text-sm text-cyan-200/40">Real-time threat visualization and origin tracking</p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
+            {/* Attack Counter */}
+            <div className="flex items-center gap-2 bg-[hsl(220,40%,10%)] px-3 py-1.5 rounded-lg border border-cyan-900/40">
+              <Zap className="h-4 w-4 text-yellow-400 animate-pulse" />
+              <div className="flex flex-col">
+                <span className="text-sm font-bold text-cyan-50 tabular-nums">{attacksPerSecond}</span>
+                <span className="text-[8px] text-cyan-200/40 uppercase tracking-wider">atk/sec</span>
+              </div>
+            </div>
             <Select value={selectedSeverity} onValueChange={setSelectedSeverity}>
               <SelectTrigger className="w-[130px] bg-[hsl(220,40%,10%)] border-cyan-900/40 text-cyan-100">
                 <SelectValue placeholder="Severity" />
@@ -237,9 +322,9 @@ const AttackMap = () => {
         {/* Stats */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           {[
+            { icon: Zap, label: "Attacks/sec", value: attacksPerSecond, color: "#eab308" },
             { icon: Target, label: "Critical Attacks", value: filteredThreats.filter((t) => t.severity === "critical").length, color: "#ef4444" },
             { icon: Activity, label: "Active Threats", value: filteredThreats.length, color: "#f97316" },
-            { icon: MapPin, label: "Origin Countries", value: countryStats.length, color: "#3b82f6" },
             { icon: Globe, label: "Attack Flows", value: filteredFlows.length, color: "#22d3ee" },
           ].map((s) => (
             <Card key={s.label} className="bg-[hsl(220,45%,8%)] border-cyan-900/30">
@@ -272,14 +357,21 @@ const AttackMap = () => {
                       <Globe className="h-3 w-3" /> 3D Globe
                     </TabsTrigger>
                   </TabsList>
-                  <div className="flex items-center gap-1.5 bg-[hsl(220,40%,8%)]/80 px-2.5 py-1 rounded-full border border-cyan-900/30">
-                    <div className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse shadow-[0_0_8px_#34d399]" />
-                    <span className="text-[10px] font-medium text-cyan-100/70">LIVE</span>
+                  <div className="flex items-center gap-3">
+                    {/* Inline attack counter on map */}
+                    <div className="flex items-center gap-1.5 bg-[hsl(220,40%,8%)]/80 px-2.5 py-1 rounded-full border border-yellow-900/30">
+                      <Zap className="h-3 w-3 text-yellow-400" />
+                      <span className="text-[10px] font-bold text-yellow-300 tabular-nums">{attacksPerSecond} atk/s</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 bg-[hsl(220,40%,8%)]/80 px-2.5 py-1 rounded-full border border-cyan-900/30">
+                      <div className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse shadow-[0_0_8px_#34d399]" />
+                      <span className="text-[10px] font-medium text-cyan-100/70">LIVE</span>
+                    </div>
                   </div>
                 </div>
 
                 <TabsContent value="2d" className="mt-0">
-                  <div className={`relative w-full ${isFullscreen ? "h-[calc(100vh-300px)]" : "h-[550px]"}`} style={{ backgroundColor: "hsl(220 50% 4%)" }}>
+                  <div className={`relative w-full ${isFullscreen ? "h-[calc(100vh-380px)]" : "h-[450px]"}`} style={{ backgroundColor: "hsl(220 50% 4%)" }}>
                     <ComposableMap
                       projectionConfig={{ scale: 180, center: [0, 20] }}
                       className="w-full h-full"
@@ -356,7 +448,7 @@ const AttackMap = () => {
                       ))}
                     </ComposableMap>
 
-                    {/* Attack Types Legend (Radware-style) */}
+                    {/* Attack Types Legend */}
                     <div className="absolute top-3 left-3 bg-[hsl(220,45%,8%)]/90 backdrop-blur-sm rounded-lg p-3 border border-cyan-900/30 max-w-[180px]">
                       <p className="text-[10px] font-bold text-cyan-400 uppercase tracking-wider mb-2">Attack Types</p>
                       <div className="flex flex-col gap-1.5">
@@ -394,14 +486,18 @@ const AttackMap = () => {
                       ))}
                     </div>
                   </div>
+
+                  {/* Timeline Bar */}
+                  <TimelineBar threats={filteredThreats} />
                 </TabsContent>
 
                 <TabsContent value="3d" className="mt-0">
-                  <div className={`relative w-full ${isFullscreen ? "h-[calc(100vh-300px)]" : "h-[550px]"}`}>
+                  <div className={`relative w-full ${isFullscreen ? "h-[calc(100vh-380px)]" : "h-[450px]"}`}>
                     <Suspense fallback={<div className="w-full h-full flex items-center justify-center bg-[hsl(220,50%,4%)]"><Skeleton className="w-full h-full" /></div>}>
                       <Globe3D />
                     </Suspense>
                   </div>
+                  <TimelineBar threats={filteredThreats} />
                 </TabsContent>
               </Tabs>
             </Card>
