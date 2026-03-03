@@ -12,7 +12,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Globe, Target, Activity, MapPin, Maximize2, Minimize2, Map, Volume2, VolumeX, Layers, Zap } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
-import { playAlertSound, playAttackSound } from "@/lib/sounds";
+import { playAlertSound } from "@/lib/sounds";
+import CountryDrillDown from "@/components/dashboard/CountryDrillDown";
 
 const Globe3D = lazy(() => import("@/components/dashboard/Globe3D"));
 
@@ -147,7 +148,7 @@ const AttackMap = () => {
   );
   const [attacksPerSecond, setAttacksPerSecond] = useState(0);
   const attackTimestamps = useRef<number[]>([]);
-
+  const [selectedCountry, setSelectedCountry] = useState<string | null>(null);
   const toggleType = (type: string) => {
     setEnabledTypes((prev) => {
       const next = new Set(prev);
@@ -177,7 +178,8 @@ const AttackMap = () => {
         if (soundEnabled) {
           if (n.severity === "critical") playAlertSound("critical");
           else if (n.severity === "high") playAlertSound("high");
-          else playAttackSound();
+          else if (n.severity === "medium") playAlertSound("medium");
+          else playAlertSound("low");
         }
         if (n.severity === "critical" || n.severity === "high") {
           toast.error(`New ${n.severity.toUpperCase()} Threat`, {
@@ -391,20 +393,26 @@ const AttackMap = () => {
 
                       <Geographies geography={geoUrl}>
                         {({ geographies }) =>
-                          geographies.map((geo) => (
-                            <Geography
-                              key={geo.rsmKey}
-                              geography={geo}
-                              fill="hsl(220 40% 12%)"
-                              stroke="hsl(200 60% 22%)"
-                              strokeWidth={0.4}
-                              style={{
-                                default: { outline: "none" },
-                                hover: { fill: "hsl(220 40% 16%)", outline: "none" },
-                                pressed: { outline: "none" },
-                              }}
-                            />
-                          ))
+                          geographies.map((geo) => {
+                            const geoName = geo.properties?.name || "";
+                            return (
+                              <Geography
+                                key={geo.rsmKey}
+                                geography={geo}
+                                fill="hsl(220 40% 12%)"
+                                stroke="hsl(200 60% 22%)"
+                                strokeWidth={0.4}
+                                onClick={() => {
+                                  if (geoName) setSelectedCountry(geoName);
+                                }}
+                                style={{
+                                  default: { outline: "none", cursor: "pointer" },
+                                  hover: { fill: "hsl(200 50% 20%)", stroke: "hsl(200 80% 45%)", strokeWidth: 0.8, outline: "none", cursor: "pointer" },
+                                  pressed: { fill: "hsl(200 50% 25%)", outline: "none" },
+                                }}
+                              />
+                            );
+                          })
                         }
                       </Geographies>
 
@@ -517,7 +525,11 @@ const AttackMap = () => {
                   <p className="text-sm text-cyan-200/40">No data</p>
                 ) : (
                   countryStats.map((stat, idx) => (
-                    <div key={stat.country} className="flex items-center justify-between p-2 rounded-lg bg-[hsl(220,40%,10%)] hover:bg-[hsl(220,40%,14%)] transition-colors cursor-pointer">
+                    <div
+                      key={stat.country}
+                      className="flex items-center justify-between p-2 rounded-lg bg-[hsl(220,40%,10%)] hover:bg-[hsl(220,40%,14%)] transition-colors cursor-pointer"
+                      onClick={() => setSelectedCountry(stat.country)}
+                    >
                       <div className="flex items-center gap-2">
                         <span className="text-[10px] font-mono text-cyan-400/50 w-4">#{idx + 1}</span>
                         <span className="text-xs font-medium text-cyan-100/80 truncate max-w-[100px]">{stat.country}</span>
@@ -557,6 +569,11 @@ const AttackMap = () => {
             </Card>
           </div>
         </div>
+
+        {/* Country Drill-Down Panel */}
+        {selectedCountry && (
+          <CountryDrillDown country={selectedCountry} onClose={() => setSelectedCountry(null)} />
+        )}
       </div>
     </DashboardLayout>
   );
