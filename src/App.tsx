@@ -16,6 +16,7 @@ import AIDefense from "./pages/AIDefense";
 import Settings from "./pages/Settings";
 import Docs from "./pages/Docs";
 import DarkWeb from "./pages/DarkWeb";
+import Collaboration from "./pages/Collaboration";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -40,6 +41,7 @@ const App = () => (
               <Route path="/settings" element={<Settings />} />
               <Route path="/docs" element={<Docs />} />
               <Route path="/dark-web" element={<DarkWeb />} />
+              <Route path="/collaboration" element={<Collaboration />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </TooltipProvider>

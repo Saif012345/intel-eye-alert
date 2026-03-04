@@ -13,6 +13,7 @@ import {
   ChevronRight,
   X,
   Skull,
+  UsersRound,
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
@@ -40,6 +41,7 @@ const mainNavItems = [
   { title: "Attack Map", url: "/attack-map", icon: Globe },
   { title: "Alerts & Incidents", url: "/alerts", icon: AlertTriangle },
   { title: "Dark Web Intel", url: "/dark-web", icon: Skull },
+  { title: "Collaboration", url: "/collaboration", icon: UsersRound },
 ];
 
 const toolsNavItems = [
