@@ -11,7 +11,8 @@ import {
   Shield,
   ChevronLeft,
   ChevronRight,
-  X
+  X,
+  Skull,
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
@@ -38,6 +39,7 @@ const mainNavItems = [
   { title: "IOCs Database", url: "/iocs", icon: Database },
   { title: "Attack Map", url: "/attack-map", icon: Globe },
   { title: "Alerts & Incidents", url: "/alerts", icon: AlertTriangle },
+  { title: "Dark Web Intel", url: "/dark-web", icon: Skull },
 ];
 
 const toolsNavItems = [
