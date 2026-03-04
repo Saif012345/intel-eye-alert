@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import DashboardLayout from "@/components/layout/DashboardLayout";
+import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,17 +13,12 @@ import {
   MessageSquare,
   ShoppingCart,
   Clock,
-  TrendingUp,
-  Filter,
-  RefreshCw,
-  Skull,
   Key,
   CreditCard,
   Globe,
   Lock,
   Users,
   Hash,
-  ExternalLink,
 } from "lucide-react";
 
 // --- Simulated dark web data generators ---
@@ -45,7 +40,7 @@ const marketplaces = [
   "Tor2Door", "Dark0de Reborn", "Vice City", "MGM Grand",
 ];
 
-const leakTypes = ["credentials", "database", "pii", "financial", "medical", "corporate"];
+
 
 const countries = [
   "United States", "Russia", "China", "Nigeria", "Brazil", "India",
@@ -408,7 +403,7 @@ const DarkWeb = () => {
                         </div>
                         <div className="space-y-1.5 flex-1">
                           <div className="flex items-center gap-2 flex-wrap">
-                            <Badge className={`${sev.bg} ${sev.color} border-0 text-[10px]`}>{c.severity || l.severity}</Badge>
+                            <Badge className={`${sev.bg} ${sev.color} border-0 text-[10px]`}>{l.severity}</Badge>
                             <Badge variant="outline" className="text-[10px] border-muted-foreground/20 capitalize">{l.category}</Badge>
                             <span className="text-[10px] text-muted-foreground flex items-center gap-1">
                               <Clock className="h-3 w-3" /> {timeAgo(l.timestamp)}
