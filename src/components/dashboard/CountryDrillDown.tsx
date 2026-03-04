@@ -181,6 +181,7 @@ const CountryDrillDown = ({ country, onClose }: CountryDrillDownProps) => {
         </div>
       </div>
     </div>
+    </>
   );
 };
 
